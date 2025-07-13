@@ -1,25 +1,33 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, ArrowLeft, Lock, CheckCircle, AlertCircle } from "lucide-react"
+import { Heart, ArrowLeft, Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react"
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const token = searchParams.get("token")
 
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (!token) {
+      setError("Geçersiz sıfırlama bağlantısı")
+    }
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,11 +58,15 @@ export default function ResetPasswordPage() {
 
       if (response.ok) {
         setIsSuccess(true)
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          router.push("/login")
+        }, 3000)
       } else {
         setError(data.error || "Bir hata oluştu")
       }
     } catch (error) {
-      setError("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.")
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +120,7 @@ export default function ResetPasswordPage() {
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center">
                       <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                      <span className="text-red-700">{error}</span>
+                      <span className="text-red-700 text-sm">{error}</span>
                     </div>
                   </div>
                 )}
@@ -118,30 +130,48 @@ export default function ResetPasswordPage() {
                     <Label htmlFor="password" className="text-gray-700">
                       Yeni Şifre
                     </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="mt-1 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <Label htmlFor="confirmPassword" className="text-gray-700">
                       Şifre Tekrar
                     </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="mt-1"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="mt-1 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button
@@ -162,6 +192,7 @@ export default function ResetPasswordPage() {
                 <p className="text-gray-600 mb-6">
                   Şifreniz başarıyla güncellendi. Artık yeni şifrenizle giriş yapabilirsiniz.
                 </p>
+                <p className="text-sm text-gray-500 mb-4">3 saniye içinde giriş sayfasına yönlendirileceksiniz...</p>
                 <Link href="/login">
                   <Button className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600">
                     Giriş Yap
