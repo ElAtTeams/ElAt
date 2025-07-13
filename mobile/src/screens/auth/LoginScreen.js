@@ -19,6 +19,7 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const { login, signInWithGoogle, loading } = useAuth()
 
   const handleLogin = async () => {
@@ -27,7 +28,14 @@ export default function LoginScreen({ navigation }) {
       return
     }
 
-    const result = await login(email, password)
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      Alert.alert("Hata", "Geçerli bir e-posta adresi girin")
+      return
+    }
+
+    const result = await login(email, password, rememberMe)
     if (!result.success) {
       Alert.alert("Giriş Hatası", result.error)
     }
@@ -41,10 +49,20 @@ export default function LoginScreen({ navigation }) {
     }
   }
 
+  const handleForgotPassword = () => {
+    navigation.navigate("ForgotPassword")
+  }
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Ionicons name="heart" size={24} color="#fff" />
+            </View>
+            <Text style={styles.logoText}>YanKapı</Text>
+          </View>
           <Text style={styles.title}>Hoş Geldiniz</Text>
           <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
         </View>
@@ -60,6 +78,7 @@ export default function LoginScreen({ navigation }) {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              autoCorrect={false}
             />
           </View>
 
@@ -72,9 +91,23 @@ export default function LoginScreen({ navigation }) {
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               autoComplete="password"
+              autoCorrect={false}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
               <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.optionsContainer}>
+            <TouchableOpacity style={styles.checkboxContainer} onPress={() => setRememberMe(!rememberMe)}>
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Ionicons name="checkmark" size={16} color="#fff" />}
+              </View>
+              <Text style={styles.checkboxText}>Beni hatırla</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleForgotPassword}>
+              <Text style={styles.forgotPasswordText}>Şifremi unuttum</Text>
             </TouchableOpacity>
           </View>
 
@@ -119,6 +152,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#10b981",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1a1a1a",
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
@@ -154,13 +206,46 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 4,
   },
+  optionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: "#e1e1e1",
+    borderRadius: 4,
+    marginRight: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#10b981",
+    borderColor: "#10b981",
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: "#10b981",
+    fontWeight: "500",
+  },
   loginButton: {
     backgroundColor: "#10b981",
     borderRadius: 12,
     height: 50,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginBottom: 24,
   },
   loginButtonText: {
     color: "#fff",
@@ -170,7 +255,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 24,
+    marginBottom: 24,
   },
   dividerLine: {
     flex: 1,
@@ -191,6 +276,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 50,
     backgroundColor: "#fff",
+    marginBottom: 24,
   },
   googleButtonText: {
     marginLeft: 12,
@@ -201,7 +287,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 24,
   },
   footerText: {
     color: "#666",

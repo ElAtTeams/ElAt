@@ -1,29 +1,65 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Heart, ArrowLeft } from "lucide-react"
+import { Heart, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { AnimatedBackground } from "@/components/animated-background"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Login logic will be implemented with backend
-    console.log("Login attempt:", formData)
+    setError("")
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Store tokens
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("refreshToken", data.refreshToken)
+        localStorage.setItem("user", JSON.stringify(data.user))
+
+        if (rememberMe) {
+          localStorage.setItem("rememberMe", "true")
+        }
+
+        // Redirect to home page
+        router.push("/")
+      } else {
+        setError(data.error || "Giriş sırasında bir hata oluştu")
+      }
+    } catch (error) {
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogleLogin = () => {
-    // Google OAuth login
     window.location.href = "/api/auth/google"
   }
 
@@ -64,6 +100,12 @@ export default function LoginPage() {
             <p className="text-gray-400">Hesabınıza giriş yapın</p>
           </div>
 
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div>
@@ -84,15 +126,24 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-gray-300">
                   Şifre
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -100,6 +151,8 @@ export default function LoginPage() {
               <label className="flex items-center">
                 <input
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded border-gray-700 bg-gray-800 text-green-500 focus:ring-green-500"
                 />
                 <span className="ml-2 text-sm text-gray-300">Beni hatırla</span>
@@ -111,9 +164,10 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-3"
             >
-              Giriş Yap
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
             </Button>
 
             <div className="relative">

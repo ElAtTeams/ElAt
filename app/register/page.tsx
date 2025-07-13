@@ -1,33 +1,77 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Heart, ArrowLeft } from "lucide-react"
+import { Heart, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { AnimatedBackground } from "@/components/animated-background"
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
-    neighborhood: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Şifreler eşleşmiyor!")
+      setError("Şifreler eşleşmiyor!")
       return
     }
-    // Register logic will be implemented with backend
-    console.log("Register attempt:", formData)
+
+    if (formData.password.length < 6) {
+      setError("Şifre en az 6 karakter olmalıdır!")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Store token in localStorage
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("refreshToken", data.refreshToken)
+        localStorage.setItem("user", JSON.stringify(data.user))
+
+        // Redirect to home page
+        router.push("/")
+      } else {
+        setError(data.error || "Kayıt sırasında bir hata oluştu")
+      }
+    } catch (error) {
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogleRegister = () => {
@@ -49,13 +93,11 @@ export default function RegisterPage() {
               <span className="text-3xl font-bold">YanKapı</span>
             </div>
             <h1 className="text-4xl font-bold leading-tight">
-              Mahalle
+              Komşularınızla
               <br />
-              <span className="text-green-400">Topluluğuna Katılın</span>
+              <span className="text-green-400">Bağlantı Kurun</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-md">
-              Komşularınızla yardımlaşın, paylaşın ve güçlü bir topluluk oluşturun.
-            </p>
+            <p className="text-xl text-gray-300 max-w-md">Yardımlaşın, paylaşın ve güçlü bir topluluk oluşturun.</p>
           </div>
         </div>
       </div>
@@ -69,8 +111,14 @@ export default function RegisterPage() {
               Ana Sayfaya Dön
             </Link>
             <h2 className="text-3xl font-bold text-white mb-2">Hesap Oluşturun</h2>
-            <p className="text-gray-400">Mahalle topluluğuna katılın</p>
+            <p className="text-gray-400">Topluluğa katılın</p>
           </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
@@ -120,48 +168,51 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="neighborhood" className="text-gray-300">
-                Mahalle
-              </Label>
-              <Input
-                id="neighborhood"
-                type="text"
-                placeholder="Mahalleniz"
-                value={formData.neighborhood}
-                onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500"
-                required
-              />
-            </div>
-
-            <div>
               <Label htmlFor="password" className="text-gray-300">
                 Şifre
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
               <Label htmlFor="confirmPassword" className="text-gray-300">
                 Şifre Tekrar
               </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center">
@@ -184,9 +235,10 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-3"
             >
-              Hesap Oluştur
+              {loading ? "Hesap Oluşturuluyor..." : "Hesap Oluştur"}
             </Button>
 
             <div className="relative">

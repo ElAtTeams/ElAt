@@ -1,22 +1,23 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, ArrowLeft, Mail, CheckCircle } from "lucide-react"
+import { Heart, ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
     setIsLoading(true)
 
     try {
@@ -28,16 +29,23 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
         setIsSubmitted(true)
       } else {
-        alert("Bir hata oluştu. Lütfen tekrar deneyin.")
+        setError(data.error || "Bir hata oluştu. Lütfen tekrar deneyin.")
       }
     } catch (error) {
-      alert("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleResend = () => {
+    setIsSubmitted(false)
+    setError("")
   }
 
   return (
@@ -64,6 +72,15 @@ export default function ForgotPasswordPage() {
                   <h1 className="text-2xl font-bold text-gray-800 mb-2">Şifremi Unuttum</h1>
                   <p className="text-gray-600">E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.</p>
                 </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center">
+                      <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                      <span className="text-red-700 text-sm">{error}</span>
+                    </div>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
@@ -111,7 +128,7 @@ export default function ForgotPasswordPage() {
                 </p>
                 <div className="space-y-3">
                   <p className="text-sm text-gray-500">E-posta gelmedi mi? Spam klasörünüzü kontrol edin.</p>
-                  <Button onClick={() => setIsSubmitted(false)} variant="outline" className="w-full">
+                  <Button onClick={handleResend} variant="outline" className="w-full bg-transparent">
                     Tekrar Gönder
                   </Button>
                 </div>
