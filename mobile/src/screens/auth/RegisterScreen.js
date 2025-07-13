@@ -16,7 +16,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../../contexts/AuthContext"
 
 export default function RegisterScreen({ navigation }) {
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -25,8 +26,13 @@ export default function RegisterScreen({ navigation }) {
   const { register, signInWithGoogle, loading } = useAuth()
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Hata", "Lütfen tüm alanları doldurun")
+      return
+    }
+
+    if (firstName.length < 2 || lastName.length < 2) {
+      Alert.alert("Hata", "Ad ve soyad en az 2 karakter olmalıdır")
       return
     }
 
@@ -40,7 +46,7 @@ export default function RegisterScreen({ navigation }) {
       return
     }
 
-    const result = await register(name, email, password)
+    const result = await register(firstName, lastName, email, password)
     if (!result.success) {
       Alert.alert("Kayıt Hatası", result.error)
     }
@@ -58,21 +64,40 @@ export default function RegisterScreen({ navigation }) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Ionicons name="heart" size={24} color="#fff" />
+            </View>
+            <Text style={styles.logoText}>YanKapı</Text>
+          </View>
           <Text style={styles.title}>Hesap Oluşturun</Text>
-          <Text style={styles.subtitle}>Komşularınızla paylaşmaya başlayın</Text>
+          <Text style={styles.subtitle}>Komşularınızla bağlantı kurun</Text>
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Adınız Soyadınız"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              autoComplete="name"
-            />
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Ad"
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+                autoComplete="given-name"
+              />
+            </View>
+            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Soyad"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                autoComplete="family-name"
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
@@ -119,7 +144,7 @@ export default function RegisterScreen({ navigation }) {
           </View>
 
           <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading}>
-            <Text style={styles.registerButtonText}>{loading ? "Kayıt oluşturuluyor..." : "Kayıt Ol"}</Text>
+            <Text style={styles.registerButtonText}>{loading ? "Kayıt oluşturuluyor..." : "Hesap Oluştur"}</Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
@@ -159,6 +184,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#10b981",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1a1a1a",
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
@@ -172,6 +216,10 @@ const styles = StyleSheet.create({
   },
   form: {
     width: "100%",
+  },
+  row: {
+    flexDirection: "row",
+    marginBottom: 16,
   },
   inputContainer: {
     flexDirection: "row",
