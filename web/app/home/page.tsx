@@ -293,7 +293,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 w-full">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-emerald-600 to-emerald-500 py-3 px-4 shadow-lg">
+      <header className="sticky top-0 z-50 bg-gradient-to-r from-emerald-600 to-emerald-500 py-3 px-4 shadow-lg">
         <div className="w-full mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -393,7 +393,7 @@ export default function HomePage() {
         {/* Sol Sidebar - Detaylı Görünümde */}
         {viewMode === "detailed" && (
           <aside className="hidden lg:block w-72 sticky top-[64px] h-[calc(100vh-64px)] bg-white border-r border-gray-200 overflow-y-auto">
-            <div className="h-full flex flex-col p-4">
+            <div className="h-full flex flex-col p-4 space-y-5">
               {/* Kullanıcı Profili */}
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl mb-4">
                 <div className="relative h-10 w-10">
@@ -406,9 +406,10 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Ayşe Nur</h3>
-                  <p className="text-sm text-gray-500">Kadıköy, İstanbul</p>
+                  <p className="text-xs text-gray-500">Kadıköy, İstanbul</p>
                 </div>
               </div>
+              
               {/* Yardım Et / Talep Et Butonları */}
               <div className="space-y-3 mb-6">
                 <button
@@ -426,6 +427,7 @@ export default function HomePage() {
                   <span>Talep Et</span>
                 </button>
               </div>
+              
               {/* Kategoriler */}
               <div className="mb-6">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -445,6 +447,7 @@ export default function HomePage() {
                   ))}
                 </div>
               </div>
+              
               {/* Yardım & Destek */}
               <div className="mt-auto bg-gray-50 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
@@ -484,6 +487,7 @@ export default function HomePage() {
             </div>
           </aside>
         )}
+
         {/* Ana Akış */}
         <main
           className={`flex-1 ${
@@ -529,6 +533,7 @@ export default function HomePage() {
               </TabsList>
             </Tabs>
           </div>
+
           {/* Gönderiler */}
           {viewMode === "detailed" ? (
             <div className="divide-y divide-gray-200">
@@ -555,9 +560,7 @@ export default function HomePage() {
                           />
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900">
-                            {post.user}
-                          </h3>
+                          <h3 className="font-medium text-gray-900">{post.user}</h3>
                           <div className="flex items-center text-xs text-gray-500">
                             <MapPin className="h-3 w-3 mr-1" />
                             <span>
@@ -592,6 +595,7 @@ export default function HomePage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </header>
+
                     {/* Gönderi Görseli */}
                     <div
                       className="relative w-full h-80 cursor-pointer group"
@@ -612,6 +616,7 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
+
                     {/* Gönderi İçeriği */}
                     <div className="p-4">
                       <div className="flex justify-between items-center mb-3">
@@ -623,9 +628,7 @@ export default function HomePage() {
                             <Heart
                               className="h-6 w-6"
                               fill={isLiked[post.id] ? "#ef4444" : "none"}
-                              stroke={
-                                isLiked[post.id] ? "#ef4444" : "currentColor"
-                              }
+                              stroke={isLiked[post.id] ? "#ef4444" : "currentColor"}
                             />
                           </button>
                           <button
@@ -645,23 +648,20 @@ export default function HomePage() {
                           <Bookmark
                             className="h-6 w-6"
                             fill={isSaved[post.id] ? "#059669" : "none"}
-                            stroke={
-                              isSaved[post.id] ? "#059669" : "currentColor"
-                            }
+                            stroke={isSaved[post.id] ? "#059669" : "currentColor"}
                           />
                         </button>
                       </div>
+
                       <div className="text-sm font-medium mb-2">
                         {post.likes + (isLiked[post.id] ? 1 : 0)} beğenme
                       </div>
+
                       <div className="mb-2">
-                        <h3 className="font-semibold text-base mb-1">
-                          {post.title}
-                        </h3>
-                        <p className="text-sm text-gray-700 line-clamp-2">
-                          {post.content}
-                        </p>
+                        <h3 className="font-semibold text-base mb-1">{post.title}</h3>
+                        <p className="text-sm text-gray-700 line-clamp-2">{post.content}</p>
                       </div>
+
                       {post.comments.length > 0 && (
                         <button
                           className="text-sm text-gray-500 mb-2 hover:underline"
@@ -670,9 +670,11 @@ export default function HomePage() {
                           {post.comments.length} yorumun tümünü gör
                         </button>
                       )}
+
                       <div className="text-xs text-gray-400 uppercase">
                         {post.time}
                       </div>
+
                       {/* Yorum Ekleme */}
                       <div className="flex items-center border-t border-gray-100 pt-3 mt-3">
                         <div className="flex-1 relative">
@@ -715,9 +717,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                       <div className="text-white">
-                        <h3 className="font-medium line-clamp-1 text-sm">
-                          {post.title}
-                        </h3>
+                        <h3 className="font-medium line-clamp-1 text-sm">{post.title}</h3>
                         <div className="flex items-center text-xs mt-1">
                           <MapPin className="h-3 w-3 mr-1" />
                           <span className="line-clamp-1">{post.location}</span>
@@ -737,6 +737,7 @@ export default function HomePage() {
             </div>
           )}
         </main>
+
         {/* Sağ Sidebar - Detaylı Görünümde */}
         {viewMode === "detailed" && (
           <aside className="hidden xl:block w-80 sticky top-[64px] h-[calc(100vh-64px)] bg-white border-l border-gray-200 overflow-y-auto">
@@ -751,7 +752,7 @@ export default function HomePage() {
                 </div>
                 <div className="relative h-28 mb-3 rounded-md overflow-hidden">
                   <Image
-                    src="https://images.unsplash.com/photo-1527525443983-6e60c75fff46?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=770&q=80"
+                    src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1025&q=80"
                     alt="Topluluk"
                     fill
                     className="object-cover"
@@ -764,6 +765,7 @@ export default function HomePage() {
                   Topluluğu Keşfet
                 </button>
               </section>
+
               {/* Yaklaşan Etkinlikler */}
               <section>
                 <div className="flex items-center mb-3">
@@ -804,6 +806,7 @@ export default function HomePage() {
                   Tümünü Gör →
                 </button>
               </section>
+
               {/* Yardım Rehberi */}
               <section className="mt-auto">
                 <div className="flex items-center mb-3">
