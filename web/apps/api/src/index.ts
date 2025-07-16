@@ -1,39 +1,27 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
-import { createConnection } from './lib/database';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// CORS ayarları
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Test database connection
-createConnection()
-  .then(async (connection) => {
-    console.log('Database connection successful');
-    await connection.end();
-  })
-  .catch((error) => {
-    console.error('Database connection failed:', error);
-    process.exit(1);
-  });
+app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use('/auth', authRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Start server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 }); 
