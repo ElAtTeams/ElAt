@@ -1,25 +1,60 @@
-import { NextResponse } from "next/server"
-// import bcrypt from "bcryptjs" // In a real app, you'd use bcrypt for password hashing
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { pool } = require('../../lib/database');
 
-export async function POST(req: Request) {
+const router = express.Router();
+
+router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = await req.json()
+    const { firstName, lastName, email, password } = req.body;
 
-    // Simulate a delay for network latency
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // Gerekli alanların kontrolü
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ error: 'Tüm alanlar gereklidir' });
+    }
 
-    // In a real application, you would:
-    // 1. Hash the password: const hashedPassword = await bcrypt.hash(password, 10);
-    // 2. Check if user already exists in the database
-    // 3. Save the new user to the database
+    // Email formatı kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Geçersiz email formatı' });
+    }
 
-    // For now, we'll just return a success response
-    console.log("Mock Register: Received", { firstName, lastName, email, password })
+    // Email kullanımda mı kontrolü
+    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Bu email adresi zaten kullanımda' });
+    }
 
-    // Simulate a successful registration
-    return NextResponse.json({ success: true, message: "Kayıt başarılı!" }, { status: 200 })
+    // Şifreyi hashle
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Yeni kullanıcıyı kaydet
+    const newUser = await pool.query(
+      'INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4) RETURNING *',
+      [firstName, lastName, email, hashedPassword]
+    );
+
+    // JWT token oluştur
+    const token = jwt.sign(
+      { userId: newUser.rows[0].id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // Kullanıcı bilgilerini döndür (şifre hariç)
+    const { password: _, ...userWithoutPassword } = newUser.rows[0];
+
+    res.status(201).json({
+      token,
+      user: userWithoutPassword
+    });
+
   } catch (error) {
-    console.error("Mock Register Error:", error)
-    return NextResponse.json({ success: false, error: "Kayıt sırasında bir hata oluştu." }, { status: 500 })
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
-}
+});
+
+module.exports = router;

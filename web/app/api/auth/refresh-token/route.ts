@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
-import { createConnection } from "@/lib/database"
+import { createConnection } from "@/app/api/lib/database"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret"

@@ -1,34 +1,55 @@
-import { NextResponse } from "next/server"
-import { query } from "@/lib/database"
-import { sendPasswordResetEmail } from "@/lib/nodemailer"
-import crypto from "crypto"
+const express = require('express');
+const crypto = require('crypto');
+const { pool } = require('../../lib/database');
+const { sendEmail } = require('../../lib/nodemailer');
 
-export async function POST(request: Request) {
+const router = express.Router();
+
+router.post('/forgot-password', async (req, res) => {
   try {
-    const { email } = await request.json()
+    const { email } = req.body;
 
+    // Email kontrolü
     if (!email) {
-      return NextResponse.json({ message: "Email is required" }, { status: 400 })
+      return res.status(400).json({ error: 'Email adresi gereklidir' });
     }
 
-    const result = await query("SELECT id FROM users WHERE email = $1", [email])
-    const user = result.rows[0]
-
-    if (!user) {
-      // For security, don't reveal if the email doesn't exist
-      return NextResponse.json({ success: true, message: "Şifre sıfırlama bağlantısı gönderildi." }, { status: 200 })
+    // Kullanıcıyı bul
+    const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (user.rows.length === 0) {
+      // Güvenlik için kullanıcı bulunamasa bile başarılı mesajı dön
+      return res.json({ message: 'Şifre sıfırlama bağlantısı gönderildi' });
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex")
-    // In a real application, you would store this token in the database with an expiry
-    // For this example, we'll just send it.
-    console.log(`Generated reset token for ${email}: ${resetToken}`)
+    // Reset token oluştur
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 saat geçerli
 
-    await sendPasswordResetEmail(email, resetToken)
+    // Token'ı veritabanına kaydet
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3',
+      [resetToken, resetTokenExpiry, user.rows[0].id]
+    );
 
-    return NextResponse.json({ success: true, message: "Şifre sıfırlama bağlantısı gönderildi." }, { status: 200 })
+    // Reset email'i gönder
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    await sendEmail({
+      to: email,
+      subject: 'Şifre Sıfırlama',
+      html: `
+        <p>Şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:</p>
+        <a href="${resetUrl}">Şifremi Sıfırla</a>
+        <p>Bu bağlantı 1 saat süreyle geçerlidir.</p>
+        <p>Eğer bu isteği siz yapmadıysanız, bu emaili görmezden gelebilirsiniz.</p>
+      `
+    });
+
+    res.json({ message: 'Şifre sıfırlama bağlantısı gönderildi' });
+
   } catch (error) {
-    console.error("Forgot password error:", error)
-    return NextResponse.json({ success: false, error: "Bir hata oluştu. Lütfen tekrar deneyin." }, { status: 500 })
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
-}
+});
+
+module.exports = router;

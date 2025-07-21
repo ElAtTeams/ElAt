@@ -1,28 +1,51 @@
-import { NextResponse } from "next/server"
-// import bcrypt from "bcryptjs" // In a real app, you'd use bcrypt for password comparison
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { pool } = require('../../lib/database');
 
-export async function POST(req: Request) {
+const router = express.Router();
+
+router.post('/login', async (req, res) => {
   try {
-    const { email, password } = await req.json()
+    const { email, password } = req.body;
 
-    // Simulate a delay for network latency
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // In a real application, you would:
-    // 1. Find the user by email in the database
-    // 2. Compare the provided password with the hashed password: await bcrypt.compare(password, user.password_hash);
-    // 3. Generate a JWT token and set it as a cookie or return it
-
-    // For now, we'll simulate a successful login for specific test credentials
-    if (email === "test@example.com" && password === "password123") {
-      console.log("Mock Login: Successful for", email)
-      return NextResponse.json({ success: true, message: "Giriş başarılı!", token: "mock-jwt-token" }, { status: 200 })
-    } else {
-      console.log("Mock Login: Failed for", email)
-      return NextResponse.json({ success: false, error: "Geçersiz e-posta veya şifre." }, { status: 401 })
+    // Email ve şifre kontrolü
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email ve şifre gereklidir' });
     }
+
+    // Kullanıcıyı veritabanında ara
+    const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+    if (user.rows.length === 0) {
+      return res.status(401).json({ error: 'Geçersiz email veya şifre' });
+    }
+
+    // Şifre kontrolü
+    const validPassword = await bcrypt.compare(password, user.rows[0].password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Geçersiz email veya şifre' });
+    }
+
+    // JWT token oluştur
+    const token = jwt.sign(
+      { userId: user.rows[0].id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // Kullanıcı bilgilerini döndür (şifre hariç)
+    const { password: _, ...userWithoutPassword } = user.rows[0];
+
+    res.json({
+      token,
+      user: userWithoutPassword
+    });
+
   } catch (error) {
-    console.error("Mock Login Error:", error)
-    return NextResponse.json({ success: false, error: "Giriş sırasında bir hata oluştu." }, { status: 500 })
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
-}
+});
+
+module.exports = router;

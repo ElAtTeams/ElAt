@@ -1,24 +1,44 @@
-import { NextResponse } from "next/server"
-// import { db } from "@/lib/database" // In a real app, you'd use your database client
-// import bcrypt from "bcryptjs" // In a real app, you'd use bcrypt for password hashing
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const { pool } = require('../../lib/database');
 
-export async function POST(req: Request) {
+const router = express.Router();
+
+router.post('/reset-password', async (req, res) => {
   try {
-    const { token, password } = await req.json()
+    const { token, password } = req.body;
 
-    // Simulate a delay for network latency
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // Token ve şifre kontrolü
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token ve yeni şifre gereklidir' });
+    }
 
-    // In a real application, you would:
-    // 1. Find the user by the reset token and check its expiry
-    // 2. If valid, hash the new password: const hashedPassword = await bcrypt.hash(password, 10);
-    // 3. Update the user's password in the database and clear the reset token
+    // Token'a sahip kullanıcıyı bul
+    const user = await pool.query(
+      'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()',
+      [token]
+    );
 
-    console.log("Mock Reset Password: Received request with token", token)
-    // Always return success for mock purposes
-    return NextResponse.json({ success: true, message: "Şifreniz başarıyla güncellendi." }, { status: 200 })
+    if (user.rows.length === 0) {
+      return res.status(400).json({ error: 'Geçersiz veya süresi dolmuş token' });
+    }
+
+    // Yeni şifreyi hashle
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Şifreyi güncelle ve reset token'ı temizle
+    await pool.query(
+      'UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2',
+      [hashedPassword, user.rows[0].id]
+    );
+
+    res.json({ message: 'Şifreniz başarıyla sıfırlandı' });
+
   } catch (error) {
-    console.error("Mock Reset Password Error:", error)
-    return NextResponse.json({ success: false, error: "Şifre sıfırlama sırasında bir hata oluştu." }, { status: 500 })
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
-}
+});
+
+module.exports = router;
