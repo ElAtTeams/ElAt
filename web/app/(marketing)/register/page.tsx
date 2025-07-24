@@ -1,23 +1,36 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
+interface FormData {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  confirmPassword: string
+  gender: string
+  birthDate: string
+}
+
 export default function RegisterPage() {
+  const router = useRouter()
   const { register, loading, error, setError } = useAuth()
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    gender: "diğer",
+    birthDate: ""
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -37,10 +50,26 @@ export default function RegisterPage() {
       return
     }
 
-    const result = await register(formData.firstName, formData.lastName, formData.email, formData.password)
+    // Doğum tarihi kontrolü
+    const birthDate = new Date(formData.birthDate)
+    const today = new Date()
+    const age = today.getFullYear() - birthDate.getFullYear()
+    if (age < 18) {
+      setError("18 yaşından küçükler kayıt olamaz")
+      return
+    }
 
-    if (!result.success) {
-      setError(result.error || "Kayıt sırasında bir hata oluştu")
+    const result = await register({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password,
+      gender: formData.gender,
+      birthDate: formData.birthDate
+    })
+
+    if (result.success) {
+      router.push("/login")
     }
   }
 
@@ -92,6 +121,32 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
             />
+          </div>
+
+          <div>
+            <Label htmlFor="birthDate">Doğum Tarihi</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={formData.birthDate}
+              onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="gender">Cinsiyet</Label>
+            <select
+              id="gender"
+              className="w-full px-3 py-2 border rounded-md"
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              required
+            >
+              <option value="erkek">Erkek</option>
+              <option value="kadın">Kadın</option>
+              <option value="diğer">Diğer</option>
+            </select>
           </div>
 
           <div>

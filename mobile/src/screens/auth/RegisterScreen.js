@@ -20,6 +20,8 @@ export default function RegisterScreen({ navigation }) {
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [birthDate, setBirthDate] = useState("")
+  const [gender, setGender] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -46,7 +48,7 @@ export default function RegisterScreen({ navigation }) {
       return
     }
 
-    const result = await register(firstName, lastName, email, password)
+    const result = await register({ firstName, lastName, email, password, birthDate, gender })
     if (!result.success) {
       Alert.alert("Kayıt Hatası", result.error)
     }
@@ -141,6 +143,24 @@ export default function RegisterScreen({ navigation }) {
             <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
               <Ionicons name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
             </TouchableOpacity>
+          </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Doğum Tarihi"
+              value={birthDate}
+              onChangeText={setBirthDate}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Cinsiyet"
+              value={gender}
+              onChangeText={setGender}
+            />
           </View>
 
           <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading}>

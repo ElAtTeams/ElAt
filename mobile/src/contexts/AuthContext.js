@@ -25,8 +25,8 @@ export const AuthProvider = ({ children }) => {
   // API Configuration
   const API_BASE_URL = __DEV__ 
     ? Platform.OS === 'android' 
-      ? "http://10.0.2.2:3001" 
-      : "http://localhost:3001"
+      ? "http://10.0.2.2:3001/api" 
+      : "http://localhost:3001/api"
     : "https://your-production-api.com";
 
   // Google OAuth setup
@@ -164,7 +164,14 @@ export const AuthProvider = ({ children }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          password: userData.password,
+          gender: userData.gender,
+          birthDate: userData.birthDate,
+        }),
       });
 
       const data = await response.json();

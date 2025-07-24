@@ -1,29 +1,52 @@
-const db = require('../config/database');
+const { query } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 class User {
   static async create({ firstName, lastName, email, password, gender, birthDate }) {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    try {
+      console.log('Creating user with data:', {
+        firstName,
+        lastName,
+        email,
+        gender,
+        birthDate,
+        passwordLength: password?.length
+      });
 
-    const [result] = await db.query(
-      `INSERT INTO users 
-      (first_name, last_name, email, password, gender, birth_date, created_at, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [firstName, lastName, email, hashedPassword, gender, birthDate]
-    );
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      console.log('Password hashed successfully');
 
-    return this.findById(result.insertId);
+      const [result] = await query(
+        `INSERT INTO users 
+        (first_name, last_name, email, password, gender, birth_date, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [firstName, lastName, email, hashedPassword, gender, birthDate]
+      );
+      console.log('Insert query result:', result);
+
+      if (!result.insertId) {
+        throw new Error('Kullanıcı oluşturulamadı: Insert ID alınamadı');
+      }
+
+      const user = await this.findById(result.insertId);
+      console.log('Created user:', user);
+
+      return user;
+    } catch (error) {
+      console.error('Error in User.create:', error);
+      throw error;
+    }
   }
 
   static async findByEmail(email) {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await query('SELECT * FROM users WHERE email = ?', [email]);
     return rows[0];
   }
 
   static async findById(id) {
-    const [rows] = await db.query(
+    const [rows] = await query(
       `SELECT id, first_name, last_name, email, gender, 
       birth_date, profile_photo_url, bio, location_lat, 
       location_lng, is_verified, created_at, updated_at 
@@ -41,21 +64,21 @@ class User {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await db.query(
+    await query(
       'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
       [hashedPassword, userId]
     );
   }
 
   static async saveResetToken(userId, resetToken, resetTokenExpiry) {
-    await db.query(
+    await query(
       'UPDATE users SET reset_token = ?, reset_token_expiry = ?, updated_at = NOW() WHERE id = ?',
       [resetToken, resetTokenExpiry, userId]
     );
   }
 
   static async findByResetToken(resetToken) {
-    const [rows] = await db.query(
+    const [rows] = await query(
       'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > NOW()',
       [resetToken]
     );
@@ -63,21 +86,21 @@ class User {
   }
 
   static async verifyEmail(userId) {
-    await db.query(
+    await query(
       'UPDATE users SET is_verified = 1, verification_token = NULL, updated_at = NOW() WHERE id = ?',
       [userId]
     );
   }
 
   static async saveVerificationToken(userId, verificationToken) {
-    await db.query(
+    await query(
       'UPDATE users SET verification_token = ?, updated_at = NOW() WHERE id = ?',
       [verificationToken, userId]
     );
   }
 
   static async findByVerificationToken(token) {
-    const [rows] = await db.query(
+    const [rows] = await query(
       'SELECT * FROM users WHERE verification_token = ?',
       [token]
     );
@@ -87,7 +110,7 @@ class User {
   static async updateProfile(userId, data) {
     const { firstName, lastName, bio, locationLat, locationLng } = data;
 
-    await db.query(
+    await query(
       `UPDATE users SET 
       first_name = ?, 
       last_name = ?, 
@@ -103,7 +126,7 @@ class User {
   }
 
   static async updateProfilePhoto(userId, photoUrl) {
-    await db.query(
+    await query(
       'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
       [photoUrl, userId]
     );
