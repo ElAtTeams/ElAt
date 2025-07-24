@@ -1,42 +1,33 @@
-"use client"
+// AuthContext.js
+import { createContext, useContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import * as Google from "expo-auth-session/providers/google";
+import { Platform } from "react-native";
 
-import { createContext, useContext, useState, useEffect } from "react"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import * as Location from "expo-location"
-import * as Google from "expo-auth-session/providers/google"
-import { __DEV__ } from "react-native"
-
-const AuthContext = createContext({})
+const AuthContext = createContext({});
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
-}
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [location, setLocation] = useState(null)
-  const [error, setError] = useState(null)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState(null);
+  const [apiStatus, setApiStatus] = useState(null);
 
-  // API Base URL - Change this to your backend URL
-  const API_BASE_URL ="http://10.0.2.2:3001";
-  // Test API connection
-  const testApiConnection = async () => {
-    try {
-      console.log("Testing API connection...")
-      const response = await fetch(`${API_BASE_URL}/health`)
-      const data = await response.json()
-      console.log("API health check response:", data)
-      return true
-    } catch (error) {
-      console.error("API connection test failed:", error)
-      return false
-    }
-  }
+  // API Configuration
+  const API_BASE_URL = __DEV__ 
+    ? Platform.OS === 'android' 
+      ? "http://10.0.2.2:3001" 
+      : "http://localhost:3001"
+    : "https://your-production-api.com";
 
   // Google OAuth setup
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -44,222 +35,270 @@ export const AuthProvider = ({ children }) => {
     iosClientId: "YOUR_IOS_CLIENT_ID",
     androidClientId: "YOUR_ANDROID_CLIENT_ID",
     webClientId: "YOUR_WEB_CLIENT_ID",
-  })
+  });
 
   useEffect(() => {
-    checkAuthState()
-    requestLocationPermission()
-    testApiConnection() // Test API connection on mount
-  }, [])
+    const initAuth = async () => {
+      await checkAuthState();
+      await requestLocationPermission();
+      await checkApiHealth();
+    };
+    initAuth();
+  }, []);
 
   useEffect(() => {
     if (response?.type === "success") {
-      const { authentication } = response
-      handleGoogleSignIn(authentication)
+      const { authentication } = response;
+      handleGoogleSignIn(authentication);
     }
-  }, [response])
+  }, [response]);
+
+  const checkApiHealth = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`);
+      const data = await response.json();
+      setApiStatus(data.status === 'ok' ? 'healthy' : 'unhealthy');
+      return data.status === 'ok';
+    } catch (error) {
+      setApiStatus('unreachable');
+      return false;
+    }
+  };
 
   const checkAuthState = async () => {
     try {
-      const token = await AsyncStorage.getItem("token")
-      const userData = await AsyncStorage.getItem("user")
+      const token = await AsyncStorage.getItem("token");
+      const userData = await AsyncStorage.getItem("user");
 
       if (token && userData) {
-        setUser(JSON.parse(userData))
+        // Verify token validity before setting user
+        const isValid = await verifyToken(token);
+        if (isValid) {
+          setUser(JSON.parse(userData));
+        } else {
+          await AsyncStorage.multiRemove(["token", "user"]);
+        }
       }
     } catch (error) {
-      console.error("Auth check error:", error)
+      console.error("Auth check error:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const verifyToken = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const requestLocationPermission = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
-        const currentLocation = await Location.getCurrentPositionAsync({})
-        setLocation(currentLocation)
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation(currentLocation);
       }
     } catch (error) {
-      console.error("Location permission error:", error)
+      console.error("Location permission error:", error);
     }
-  }
+  };
 
   const login = async (email, password) => {
     try {
-      setLoading(true)
-      console.log("Login attempt:", { email, apiUrl: `${API_BASE_URL}/auth/login` })
+      setLoading(true);
+      setError(null);
 
-      // Test API connection first
-      const isApiAvailable = await testApiConnection()
-      if (!isApiAvailable) {
-        throw new Error("API sunucusuna bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.")
+      // Check API status first
+      const isApiHealthy = await checkApiHealth();
+      if (!isApiHealthy) {
+        throw new Error("API sunucusuna bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.");
       }
 
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
-          "Accept": "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-      })
+      });
 
-      console.log("Login response status:", response.status)
-      const data = await response.json()
-      console.log("Login response data:", data)
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Giriş yapılamadı")
+        throw new Error(data.message || "Giriş yapılamadı");
       }
 
-      await AsyncStorage.setItem("token", data.token)
-      await AsyncStorage.setItem("user", JSON.stringify(data.user))
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.data.user));
 
-      setUser(data.user)
-      return { success: true }
+      setUser(data.data.user);
+      return { success: true };
     } catch (error) {
-      console.error("Login error details:", error)
+      setError(error.message);
       return { 
         success: false, 
         error: error.message || "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin." 
-      }
+      };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const register = async (firstName, lastName, email, password) => {
+  const register = async (userData) => {
     try {
-      setLoading(true)
+      setLoading(true);
+      setError(null);
+
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ firstName, lastName, email, password }),
-      })
+        body: JSON.stringify(userData),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Kayıt olunamadı")
+        throw new Error(data.message || "Kayıt olunamadı");
       }
 
-      await AsyncStorage.setItem("token", data.token)
-      await AsyncStorage.setItem("user", JSON.stringify(data.user))
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.data.user));
 
-      setUser(data.user)
-      return { success: true }
+      setUser(data.data.user);
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.message }
+      setError(error.message);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const logout = async () => {
     try {
-      setLoading(true)
-      await AsyncStorage.removeItem("token")
-      await AsyncStorage.removeItem("user")
-      setUser(null)
+      setLoading(true);
+      await AsyncStorage.multiRemove(["token", "user"]);
+      setUser(null);
     } catch (error) {
-      console.error("Logout error:", error)
+      setError(error.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      setLoading(true)
-      const token = await AsyncStorage.getItem("token")
+      setLoading(true);
+      setError(null);
+      const token = await AsyncStorage.getItem("token");
 
       if (!token) {
-        throw new Error("Oturum bulunamadı")
+        throw new Error("Oturum bulunamadı");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/update-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ currentPassword, newPassword }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Şifre değiştirilemedi")
+        throw new Error(data.message || "Şifre değiştirilemedi");
       }
 
-      return { success: true }
+      // Update token if a new one was returned
+      if (data.token) {
+        await AsyncStorage.setItem("token", data.token);
+      }
+
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.message }
+      setError(error.message);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const forgotPassword = async (email) => {
     try {
-      setLoading(true)
+      setLoading(true);
+      setError(null);
+
       const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Şifre sıfırlama bağlantısı gönderilemedi")
+        throw new Error(data.message || "Şifre sıfırlama bağlantısı gönderilemedi");
       }
 
-      return { success: true, message: data.message }
+      return { success: true, message: data.message };
     } catch (error) {
-      return { success: false, error: error.message }
+      setError(error.message);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const resetPassword = async (token, newPassword) => {
     try {
-      setLoading(true)
-      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password/${token}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ token, password: newPassword }),
-      })
+        body: JSON.stringify({ password: newPassword }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Şifre sıfırlanamadı")
+        throw new Error(data.message || "Şifre sıfırlanamadı");
       }
 
-      return { success: true, message: data.message }
+      return { success: true, message: data.message };
     } catch (error) {
-      return { success: false, error: error.message }
+      setError(error.message);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const refreshToken = async () => {
     try {
-      const token = await AsyncStorage.getItem("token")
+      const token = await AsyncStorage.getItem("token");
       
       if (!token) {
-        throw new Error("Oturum bulunamadı")
+        throw new Error("Oturum bulunamadı");
       }
 
       const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
@@ -268,30 +307,64 @@ export const AuthProvider = ({ children }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ refreshToken: token }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Token yenilenemedi")
+        throw new Error(data.message || "Token yenilenemedi");
       }
 
-      await AsyncStorage.setItem("token", data.token)
+      await AsyncStorage.setItem("token", data.token);
       if (data.user) {
-        await AsyncStorage.setItem("user", JSON.stringify(data.user))
-        setUser(data.user)
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
       }
 
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
-  }
+  };
+
+  const handleGoogleSignIn = async (authentication) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ accessToken: authentication.accessToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Google ile giriş yapılamadı");
+      }
+
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.data.user));
+
+      setUser(data.data.user);
+      return { success: true };
+    } catch (error) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const value = {
     user,
     loading,
     location,
+    error,
+    apiStatus,
     login,
     register,
     logout,
@@ -300,7 +373,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     refreshToken,
     signInWithGoogle: () => promptAsync(),
-  }
+    clearError: () => setError(null),
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
