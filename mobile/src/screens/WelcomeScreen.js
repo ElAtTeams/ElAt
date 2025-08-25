@@ -9,7 +9,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -20,25 +20,25 @@ const slides = [
     id: '1',
     title: 'Komşularınla Tanış',
     description: 'Çevrende yaşayan güvenilir komşularınla tanış, yardımlaş ve paylaş.',
-    icon: 'people-outline',
+    image: { uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80' },
   },
   {
     id: '2',
     title: 'Yardım İste',
     description: 'İhtiyacın olduğunda komşularından yardım isteyebilir, karşılıklı destek olabilirsin.',
-    icon: 'hand-left-outline',
+    image: { uri: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80' },
   },
   {
     id: '3',
     title: 'Eşya Paylaş',
     description: 'Kullanmadığın eşyaları komşularınla paylaşabilir, ihtiyacı olanlara destek olabilirsin.',
-    icon: 'gift-outline',
+    image: { uri: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80' },
   },
   {
     id: '4',
     title: 'Güvenle İletişim Kur',
     description: 'Güvenli mesajlaşma sistemi ile komşularınla kolayca iletişim kurabilirsin.',
-    icon: 'chatbubbles-outline',
+    image: { uri: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=400&q=80' },
   },
 ];
 
@@ -102,7 +102,7 @@ export default function WelcomeScreen({ navigation }) {
           ]}
         >
           <View style={styles.iconContainer}>
-            <Ionicons name={item.icon} size={80} color="#10b981" />
+            <Image source={item.image} style={{ width: 120, height: 120, borderRadius: 60 }} resizeMode="cover" />
           </View>
           <Text style={styles.slideTitle}>{item.title}</Text>
           <Text style={styles.slideDescription}>{item.description}</Text>
@@ -110,6 +110,15 @@ export default function WelcomeScreen({ navigation }) {
       </View>
     );
   };
+  // Otomatik geçiş effecti
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= slides.length) nextIndex = 0;
+      slidesRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [currentIndex]);
 
   const Pagination = () => {
     return (

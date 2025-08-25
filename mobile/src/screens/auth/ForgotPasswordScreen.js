@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useAuth } from "../../contexts/AuthContext"
+  Image,
+  Dimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../contexts/AuthContext";
+
+const { width } = Dimensions.get("window");
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState("")
@@ -83,18 +87,16 @@ export default function ForgotPasswordScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: "https://source.unsplash.com/collection/190727/400x400" }} style={styles.image} resizeMode="cover" />
+        </View>
         <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
-
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="mail-outline" size={60} color="#10b981" />
-          </View>
           <Text style={styles.title}>Şifremi Unuttum</Text>
           <Text style={styles.subtitle}>E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.</Text>
         </View>
-
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
@@ -109,14 +111,12 @@ export default function ForgotPasswordScreen({ navigation }) {
               autoCorrect={false}
             />
           </View>
-
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
             <Text style={styles.submitButtonText}>{isLoading ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}</Text>
           </TouchableOpacity>
-
           <View style={styles.footer}>
             <Text style={styles.footerText}>Şifrenizi hatırladınız mı? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>...
               <Text style={styles.linkText}>Giriş yapın</Text>
             </TouchableOpacity>
           </View>
@@ -133,7 +133,20 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  imageContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  image: {
+    width: width * 0.4,
+    height: width * 0.4,
+    borderRadius: width * 0.2,
+    backgroundColor: "#f0fdf4",
   },
   backIcon: {
     alignSelf: "flex-start",
