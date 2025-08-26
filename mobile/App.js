@@ -21,6 +21,10 @@ import MessagesScreen from "./src/screens/MessagesScreen"
 import ProfileScreen from "./src/screens/ProfileScreen"
 import PostNewScreen from "./src/screens/PostNewScreen"
 import PostDetailScreen from "./src/screens/PostDetailScreen"
+import NotificationsScreen from "./src/screens/NotificationsScreen"
+import ChatScreen from "./src/screens/ChatScreen"
+import ProfileEditScreen from "./src/screens/ProfileEditScreen"
+import SettingsScreen from "./src/screens/SettingsScreen"
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -74,6 +78,7 @@ function MainTabs() {
       <Tab.Screen name="PostNew" component={PostNewScreen} options={{ title: "", tabBarLabel: () => null }} />
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Mesajlar" }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profil" }} />
+
     </Tab.Navigator>
   )
 }
@@ -82,8 +87,12 @@ function MainStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ title: "Gönderi Detayı" }} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   )
 }

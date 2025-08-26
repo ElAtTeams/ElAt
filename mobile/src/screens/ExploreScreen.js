@@ -101,6 +101,9 @@ export default function ExploreScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+        </TouchableOpacity>
         <View style={styles.locationContainer}>
           <Ionicons name="location-outline" size={20} color="#10b981" />
           <Text style={styles.locationText}>{location ? "Mevcut konum" : "Konum alınıyor..."}</Text>
@@ -156,29 +159,9 @@ export default function ExploreScreen({ navigation }) {
             data={featuredItems}
             renderItem={renderFeaturedItem}
             keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredList}
+            scrollEnabled={false}
+            contentContainerStyle={styles.itemsList}
           />
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hızlı İşlemler</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("AddPost")}>
-              <Ionicons name="add-circle-outline" size={24} color="#10b981" />
-              <Text style={styles.quickActionText}>İlan Ver</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("MutualAid")}>
-              <Ionicons name="heart-outline" size={24} color="#ef4444" />
-              <Text style={styles.quickActionText}>Yardımlaş</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate("Messages")}>
-              <Ionicons name="chatbubble-outline" size={24} color="#3b82f6" />
-              <Text style={styles.quickActionText}>Mesajlar</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -198,6 +181,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 16,
   },
+  backButton: { padding: 4, marginRight: 6 },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -302,9 +286,11 @@ const styles = StyleSheet.create({
   featuredList: {
     paddingLeft: 20,
   },
+  itemsList: { paddingHorizontal: 20 },
   itemCard: {
-    width: width * 0.7,
-    marginRight: 16,
+    width: (width - 40),
+    alignSelf: "center",
+    marginBottom: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e1e1",
@@ -361,20 +347,5 @@ const styles = StyleSheet.create({
   itemOwner: {
     fontSize: 12,
     color: "#666",
-  },
-  quickActions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingHorizontal: 20,
-  },
-  quickAction: {
-    alignItems: "center",
-    padding: 16,
-  },
-  quickActionText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#666",
-    fontWeight: "500",
   },
 })

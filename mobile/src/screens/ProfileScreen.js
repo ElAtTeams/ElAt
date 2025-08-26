@@ -169,13 +169,17 @@ export default function ProfileScreen({ navigation, route }) {
           <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profil</Text>
-        {isOwnProfile && (
-          <TouchableOpacity onPress={() => navigation.navigate("ProfileEdit")}>
-            <Ionicons name="create-outline" size={24} color="#666" />
+        <View style={styles.headerRight}>
+          {isOwnProfile && (
+            <TouchableOpacity onPress={() => navigation.navigate("ProfileEdit")} style={styles.headerIcon}>
+              <Ionicons name="create-outline" size={24} color="#666" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => navigation.navigate("Settings")} style={styles.headerIcon}>
+            <Ionicons name="settings-outline" size={24} color="#666" />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
         <View style={styles.profileSection}>
@@ -275,6 +279,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#1a1a1a",
   },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  headerIcon: { marginLeft: 12 },
   content: {
     flex: 1,
   },

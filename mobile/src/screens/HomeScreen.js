@@ -4,15 +4,14 @@ import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, FlatList, Image } from "react-native"
 import MapView, { Marker } from "react-native-maps"
 import { Ionicons } from "@expo/vector-icons"
-import { useAuth } from "../contexts/AuthContext"
+import { Sizes, getFontSize, getSize, platformValues } from "../utils/dimensions"
 
-const { width, height } = Dimensions.get("window")
 
 export default function HomeScreen({ navigation }) {
-  const [viewMode, setViewMode] = useState("list") // "list" or "map"
+  const [viewMode, setViewMode] = useState("list")
   const [tasks, setTasks] = useState([])
   const [nearbyTasks, setNearbyTasks] = useState([])
-  const { user, location } = useAuth()
+  const user = null // demo için
 
   useEffect(() => {
     loadTasks()
@@ -158,20 +157,23 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   )
 
+  // FAB için boyut (yarıçap hesaplamak için)
+  const fabSize = getSize(56, 64)
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={20} color="#10b981" />
+          <Ionicons name="location-outline" size={Sizes.icon.m} color="#10b981" />
           <Text style={styles.locationText}>Kadıköy, İstanbul</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.viewToggle} onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}>
-            <Ionicons name={viewMode === "list" ? "map-outline" : "list-outline"} size={20} color="#666" />
+          <TouchableOpacity onPress={() => navigation.navigate("Settings")} style={{ marginLeft: Sizes.spacing.m }}>
+            <Ionicons name="settings-outline" size={Sizes.icon.l} color="#666" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate("Notifications")}>
-            <Ionicons name="notifications-outline" size={24} color="#666" />
+          <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={{ marginLeft: Sizes.spacing.m }}>
+            <Ionicons name="notifications-outline" size={Sizes.icon.l} color="#666" />
           </TouchableOpacity>
         </View>
       </View>
@@ -198,14 +200,22 @@ export default function HomeScreen({ navigation }) {
         </View>
       </ScrollView>
 
+      {/* Tools over list (map toggle right aligned) */}
+      <View style={styles.toolsRow}>
+        <TouchableOpacity style={styles.mapToggleBtn} onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}>
+          <Ionicons name={viewMode === "list" ? "map-outline" : "list-outline"} size={Sizes.icon.m} color="#10b981" />
+          <Text style={styles.mapToggleText}>{viewMode === "list" ? "Harita" : "Liste"}</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* View Toggle */}
       {viewMode === "map" ? (
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
             initialRegion={{
-              latitude: location?.coords?.latitude || 41.0082,
-              longitude: location?.coords?.longitude || 28.9784,
+              latitude: 41.0082,
+              longitude: 28.9784,
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
             }}
@@ -217,7 +227,7 @@ export default function HomeScreen({ navigation }) {
                 onPress={() => navigation.navigate("PostDetail", { task })}
               >
                 <View style={[styles.mapMarker, { backgroundColor: getCategoryColor(task.category) }]}>
-                  <Ionicons name={getCategoryIcon(task.category)} size={16} color="white" />
+                  <Ionicons name={getCategoryIcon(task.category)} size={Sizes.icon.s} color="white" />
                 </View>
               </Marker>
             ))}
@@ -234,8 +244,8 @@ export default function HomeScreen({ navigation }) {
       )}
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate("PostNew")}>
-        <Ionicons name="add" size={24} color="white" />
+      <TouchableOpacity style={[styles.fab, { width: fabSize, height: fabSize, borderRadius: fabSize / 2 }]} onPress={() => navigation.navigate("PostNew")}>
+        <Ionicons name="add" size={Sizes.icon.l} color="white" />
       </TouchableOpacity>
     </View>
   )
@@ -250,147 +260,152 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingHorizontal: Sizes.spacing.l,
+    paddingTop: platformValues.statusBarHeight + Sizes.spacing.l,
+    paddingBottom: Sizes.spacing.m,
   },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   locationText: {
-    marginLeft: 8,
-    fontSize: 16,
+    marginLeft: Sizes.spacing.s,
+    fontSize: getFontSize(16, 18),
     color: "#1a1a1a",
     fontWeight: "500",
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
   },
   viewToggle: {
-    padding: 4,
+    padding: Sizes.spacing.xs,
   },
   welcomeSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: Sizes.spacing.l,
+    marginBottom: Sizes.spacing.l,
   },
   welcomeTitle: {
-    fontSize: 24,
+    fontSize: getFontSize(24, 28),
     fontWeight: "bold",
     color: "#1a1a1a",
-    marginBottom: 4,
+    marginBottom: Sizes.spacing.xs,
   },
   welcomeSubtitle: {
-    fontSize: 16,
+    fontSize: getFontSize(16, 18),
     color: "#666",
   },
+
+  // Quick stats: daha kompakt, yüksekliği az
   statsContainer: {
-    paddingLeft: 20,
-    marginBottom: 20,
+    paddingLeft: Sizes.spacing.l,
+    marginBottom: Sizes.spacing.m,
+    paddingVertical: Sizes.spacing.xs,
+    height: getSize(100, 150),
   },
   statCard: {
     backgroundColor: "#f8f9fa",
-    padding: 16,
-    borderRadius: 12,
-    marginRight: 12,
+    paddingVertical: Sizes.spacing.s,
+    paddingHorizontal: Sizes.spacing.m,
+    borderRadius: Sizes.borderRadius.m,
+    marginRight: Sizes.spacing.m,
     alignItems: "center",
-    minWidth: 80,
+    minWidth: getSize(88, 100),
+    maxHeight: getSize(56, 64),
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: getFontSize(18, 20),
     fontWeight: "bold",
     color: "#10b981",
-    marginBottom: 4,
+    marginBottom: Sizes.spacing.xs,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: getFontSize(12, 14),
     color: "#666",
   },
+
   mapContainer: {
     flex: 1,
-    margin: 20,
-    borderRadius: 12,
+    margin: Sizes.spacing.l,
+    borderRadius: Sizes.borderRadius.l,
     overflow: "hidden",
   },
   map: {
     flex: 1,
   },
   mapMarker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: getSize(32, 40),
+    height: getSize(32, 40),
+    borderRadius: getSize(32, 40) / 2,
     justifyContent: "center",
     alignItems: "center",
   },
+
   tasksList: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingHorizontal: Sizes.spacing.l,
+    paddingBottom: getSize(80, 100),
   },
   taskCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
+    borderRadius: Sizes.borderRadius.l,
+    padding: Sizes.spacing.m,
+    marginBottom: Sizes.spacing.m,
+    borderWidth: Sizes.borderWidth.default,
     borderColor: "#e1e1e1",
     position: "relative",
   },
   urgentCard: {
     borderColor: "#ef4444",
-    borderWidth: 2,
+    borderWidth: Sizes.borderWidth.thick,
   },
   urgentBadge: {
     position: "absolute",
-    top: -8,
-    right: 16,
+    top: -Sizes.spacing.xs,
+    right: Sizes.spacing.l,
     backgroundColor: "#ef4444",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: Sizes.spacing.s,
+    paddingVertical: Sizes.spacing.xs,
+    borderRadius: Sizes.borderRadius.m,
   },
   urgentText: {
     color: "white",
-    fontSize: 10,
+    fontSize: getFontSize(10, 12),
     fontWeight: "bold",
   },
   taskHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: Sizes.spacing.s,
   },
   categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: getSize(40, 48),
+    height: getSize(40, 48),
+    borderRadius: getSize(40, 48) / 2,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: Sizes.spacing.m,
   },
-  taskInfo: {
-    flex: 1,
-  },
+  taskInfo: { flex: 1 },
   taskTitle: {
-    fontSize: 16,
+    fontSize: getFontSize(16, 18),
     fontWeight: "bold",
     color: "#1a1a1a",
-    marginBottom: 4,
+    marginBottom: Sizes.spacing.xs,
   },
   taskDistance: {
-    fontSize: 12,
+    fontSize: getFontSize(12, 14),
     color: "#666",
   },
   taskPrice: {
-    fontSize: 16,
+    fontSize: getFontSize(16, 18),
     fontWeight: "bold",
     color: "#10b981",
   },
   taskDescription: {
-    fontSize: 14,
+    fontSize: getFontSize(14, 16),
     color: "#666",
-    marginBottom: 16,
-    lineHeight: 20,
+    marginBottom: Sizes.spacing.m,
+    lineHeight: getSize(20, 22),
   },
   taskFooter: {
     flexDirection: "row",
@@ -402,42 +417,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
+    width: getSize(32, 40),
+    height: getSize(32, 40),
+    borderRadius: getSize(32, 40) / 2,
+    marginRight: Sizes.spacing.s,
   },
   userName: {
-    fontSize: 12,
+    fontSize: getFontSize(12, 14),
     fontWeight: "500",
     color: "#1a1a1a",
   },
   rating: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 2,
+    marginTop: Sizes.spacing.xs / 2,
   },
   ratingText: {
-    fontSize: 10,
+    fontSize: getFontSize(10, 12),
     color: "#666",
-    marginLeft: 2,
+    marginLeft: Sizes.spacing.xs,
   },
   timeInfo: {
     flexDirection: "row",
     alignItems: "center",
   },
   timeText: {
-    fontSize: 12,
+    fontSize: getFontSize(12, 14),
     color: "#666",
-    marginLeft: 4,
+    marginLeft: Sizes.spacing.xs,
   },
   fab: {
     position: "absolute",
-    bottom: 30,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: getSize(30, 40),
+    right: getSize(20, 28),
     backgroundColor: "#10b981",
     justifyContent: "center",
     alignItems: "center",
@@ -447,4 +459,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  toolsRow: {
+    paddingHorizontal: Sizes.spacing.l,
+    marginBottom: Sizes.spacing.s,
+    alignItems: "flex-end",
+  },
+  mapToggleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Sizes.spacing.xs,
+    paddingHorizontal: Sizes.spacing.m,
+    paddingVertical: Sizes.spacing.xs,
+    borderRadius: Sizes.borderRadius.m,
+    borderWidth: Sizes.borderWidth.default,
+    borderColor: "#e1e1e1",
+    backgroundColor: "#fff",
+  },
+  mapToggleText: { marginLeft: Sizes.spacing.xs / 2, color: "#10b981", fontWeight: "600" },
 })
