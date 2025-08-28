@@ -96,14 +96,10 @@ export default function HomeScreen({ navigation }) {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case "pet":
-        return "paw-outline"
-      case "shopping":
-        return "bag-outline"
-      case "cleaning":
-        return "trash-outline"
-      default:
-        return "help-outline"
+      case "pet": return "paw-outline"
+      case "shopping": return "cart-outline" // bag-outline -> cart-outline
+      case "cleaning": return "trash-outline"
+      default: return "help-outline"
     }
   }
 
@@ -122,7 +118,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderTaskCard = ({ item }) => (
     <TouchableOpacity
-      style={[styles.taskCard, item.urgent && styles.urgentCard]}
+      style={[styles.taskCard, item.urgent && styles.urgentCard, { backgroundColor: colors.surface, borderColor: item.urgent ? "#ef4444" : colors.border }]}
       onPress={() => navigation.navigate("PostDetail", { task: item })}
     >
       {item.urgent && (
@@ -136,28 +132,28 @@ export default function HomeScreen({ navigation }) {
           <Ionicons name={getCategoryIcon(item.category)} size={20} color={getCategoryColor(item.category)} />
         </View>
         <View style={styles.taskInfo}>
-          <Text style={styles.taskTitle}>{item.title}</Text>
-          <Text style={styles.taskDistance}>📍 {item.distance}</Text>
+          <Text style={[styles.taskTitle, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.taskDistance, { color: colors.subtext }]}>📍 {item.distance}</Text>
         </View>
-        <Text style={styles.taskPrice}>{item.price}</Text>
+        <Text style={[styles.taskPrice, { color: colors.primary }]}>{item.price}</Text>
       </View>
 
-      <Text style={styles.taskDescription}>{item.description}</Text>
+      <Text style={[styles.taskDescription, { color: colors.subtext }]}>{item.description}</Text>
 
       <View style={styles.taskFooter}>
         <View style={styles.userInfo}>
           <Image source={{ uri: item.user.avatar }} style={styles.userAvatar} />
           <View>
-            <Text style={styles.userName}>{item.user.name}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{item.user.name}</Text>
             <View style={styles.rating}>
               <Ionicons name="star" size={12} color="#fbbf24" />
-              <Text style={styles.ratingText}>{item.user.rating}</Text>
+              <Text style={[styles.ratingText, { color: colors.subtext }]}>{item.user.rating}</Text>
             </View>
           </View>
         </View>
         <View style={styles.timeInfo}>
-          <Ionicons name="time-outline" size={14} color="#666" />
-          <Text style={styles.timeText}>{item.time}</Text>
+          <Ionicons name="time-outline" size={14} color={colors.subtext} />
+          <Text style={[styles.timeText, { color: colors.subtext }]}>{item.time}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -198,25 +194,31 @@ export default function HomeScreen({ navigation }) {
 
       {/* Quick Stats */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: Sizes.borderWidth.default }]}>
           <Text style={[styles.statNumber, { color: colors.primary }]}>12</Text>
-          <Text style={[styles.statLabel, { color: colors.subtext }]}>Aktif Görev</Text>
+          <Text style={[styles.statLabel, { color: colors.text }]}>Aktif Görev</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: Sizes.borderWidth.default }]}>
           <Text style={[styles.statNumber, { color: colors.primary }]}>8</Text>
-          <Text style={[styles.statLabel, { color: colors.subtext }]}>Yakındaki</Text>
+          <Text style={[styles.statLabel, { color: colors.text }]}>Yakındaki</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: Sizes.borderWidth.default }]}>
           <Text style={[styles.statNumber, { color: colors.primary }]}>3</Text>
-          <Text style={[styles.statLabel, { color: colors.subtext }]}>Acil</Text>
+          <Text style={[styles.statLabel, { color: colors.text }]}>Acil</Text>
         </View>
       </ScrollView>
 
       {/* Araçlar (Harita/Liste butonu sağda) */}
       <View style={styles.toolsRow}>
-        <TouchableOpacity style={styles.mapToggleBtn} onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}>
-          <Ionicons name={viewMode === "list" ? "map-outline" : "list-outline"} size={Sizes.icon.m} color="#10b981" />
-          <Text style={styles.mapToggleText}>{viewMode === "list" ? "Harita" : "Liste"}</Text>
+        <TouchableOpacity
+          style={[
+            styles.mapToggleBtn,
+            { borderColor: colors.border, backgroundColor: colors.surface },
+          ]}
+          onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}
+        >
+          <Ionicons name={viewMode === "list" ? "map-outline" : "list-outline"} size={Sizes.icon.m} color={colors.primary} />
+          <Text style={[styles.mapToggleText, { color: colors.primary }]}>{viewMode === "list" ? "Harita" : "Liste"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -249,52 +251,7 @@ export default function HomeScreen({ navigation }) {
       ) : (
         <FlatList
           data={tasks}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.taskCard,
-                item.urgent && styles.urgentCard,
-                { backgroundColor: colors.surface, borderColor: item.urgent ? "#ef4444" : colors.border },
-              ]}
-              onPress={() => navigation.navigate("PostDetail", { task: item })}
-            >
-              {item.urgent && (
-                <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentText}>ACİL</Text>
-                </View>
-              )}
-
-              <View style={styles.taskHeader}>
-                <View style={[styles.categoryIcon, { backgroundColor: getCategoryColor(item.category) + "20" }]}>
-                  <Ionicons name={getCategoryIcon(item.category)} size={20} color={getCategoryColor(item.category)} />
-                </View>
-                <View style={styles.taskInfo}>
-                  <Text style={styles.taskTitle}>{item.title}</Text>
-                  <Text style={styles.taskDistance}>📍 {item.distance}</Text>
-                </View>
-                <Text style={styles.taskPrice}>{item.price}</Text>
-              </View>
-
-              <Text style={styles.taskDescription}>{item.description}</Text>
-
-              <View style={styles.taskFooter}>
-                <View style={styles.userInfo}>
-                  <Image source={{ uri: item.user.avatar }} style={styles.userAvatar} />
-                  <View>
-                    <Text style={styles.userName}>{item.user.name}</Text>
-                    <View style={styles.rating}>
-                      <Ionicons name="star" size={12} color="#fbbf24" />
-                      <Text style={styles.ratingText}>{item.user.rating}</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.timeInfo}>
-                  <Ionicons name="time-outline" size={14} color="#666" />
-                  <Text style={styles.timeText}>{item.time}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
+          renderItem={renderTaskCard} // tek render kaynağı
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.tasksList}
           showsVerticalScrollIndicator={false}
@@ -365,26 +322,27 @@ const styles = StyleSheet.create({
   },
   statCard: {
     backgroundColor: "#f8f9fa",
-    paddingVertical: Sizes.spacing.s,
-    paddingHorizontal: Sizes.spacing.m,
-    borderRadius: Sizes.borderRadius.m,
+    paddingVertical: Sizes.spacing.m,   // daha ferah
+    paddingHorizontal: Sizes.spacing.l, // daha ferah
+    borderRadius: Sizes.borderRadius.l,
     marginRight: Sizes.spacing.m,
     alignItems: "center",
-    minWidth: getSize(88, 100),
-    minHeight: getSize(64, 72), // rahat nefes alan
-    justifyContent: "center",
+    minWidth: getSize(112, 128),
+    minHeight: getSize(86, 96),
   },
   statNumber: {
-    fontSize: getFontSize(18, 20),
+    fontSize: getFontSize(20, 22),
     fontWeight: "bold",
     color: "#10b981",
     marginBottom: Sizes.spacing.xs,
+    textAlign: "center",
   },
   statLabel: {
-    fontSize: getFontSize(12, 14),
-    color: "#666",
+    fontSize: getFontSize(14, 16),
+    fontWeight: "700", // daha belirgin
+    textAlign: "center",
+    flexShrink: 1,
   },
-
   mapContainer: {
     marginHorizontal: Sizes.spacing.l,
     marginBottom: Sizes.spacing.l,
@@ -551,8 +509,7 @@ const styles = StyleSheet.create({
     paddingVertical: Sizes.spacing.xs,
     borderRadius: Sizes.borderRadius.m,
     borderWidth: Sizes.borderWidth.default,
-    borderColor: "#e1e1e1",
-    backgroundColor: "#fff",
+    // borderColor/backgroundColor runtime'da temadan geliyor
   },
-  mapToggleText: { marginLeft: Sizes.spacing.xs / 2, color: "#10b981", fontWeight: "600" },
+  mapToggleText: { marginLeft: Sizes.spacing.xs / 2, fontWeight: "600" },
 })

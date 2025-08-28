@@ -23,7 +23,7 @@ export default function PostNewScreen({ navigation }) {
 
   const categories = [
     { id: "pet", name: "Evcil Hayvan", icon: "paw-outline", color: "#f59e0b" },
-    { id: "shopping", name: "Alışveriş", icon: "bag-outline", color: "#10b981" },
+    { id: "shopping", name: "Alışveriş", icon: "cart-outline", color: "#10b981" }, // bag-outline -> cart-outline
     { id: "cleaning", name: "Temizlik", icon: "trash-outline", color: "#3b82f6" },
     { id: "transport", name: "Ulaşım", icon: "car-outline", color: "#8b5cf6" },
     { id: "elderly", name: "Yaşlı Bakımı", icon: "heart-outline", color: "#ef4444" },
@@ -99,7 +99,7 @@ export default function PostNewScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni Görev</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni İlan</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={loading}>
           <Text style={[styles.publishButton, { color: loading ? colors.subtext : colors.primary }]}>
             {loading ? "Yayınlanıyor..." : "Yayınla"}
@@ -126,15 +126,16 @@ export default function PostNewScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.text }]}>Açıklama *</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.text }]}
             placeholder="Görev detaylarını açıklayın"
+            placeholderTextColor={colors.subtext}
             value={description}
             onChangeText={setDescription}
             multiline
             numberOfLines={4}
             maxLength={500}
           />
-          <Text style={styles.charCount}>{description.length}/500</Text>
+          <Text style={[styles.charCount, { color: colors.subtext }]}>{description.length}/500</Text>
         </View>
 
         {/* Category */}
@@ -150,11 +151,12 @@ export default function PostNewScreen({ navigation }) {
         {/* Price */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.text }]}>Ücret (Opsiyonel)</Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.currencySymbol}>₺</Text>
+          <View style={[styles.priceContainer, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+            <Text style={[styles.currencySymbol, { color: colors.subtext }]}>₺</Text>
             <TextInput
-              style={styles.priceInput}
+              style={[styles.priceInput, { color: colors.text }]}
               placeholder="0"
+              placeholderTextColor={colors.subtext}
               value={price}
               onChangeText={setPrice}
               keyboardType="numeric"
@@ -166,13 +168,13 @@ export default function PostNewScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.text }]}>Tarih ve Saat</Text>
           <View style={styles.dateTimeContainer}>
-            <TouchableOpacity style={styles.dateTimeButton} onPress={() => setShowDateModal(true)}>
-              <Ionicons name="calendar-outline" size={20} color="#666" />
-              <Text style={styles.dateTimeText}>{formatDate(date)}</Text>
+            <TouchableOpacity style={[styles.dateTimeButton, { backgroundColor: colors.muted, borderColor: colors.border }]} onPress={() => setShowDateModal(true)}>
+              <Ionicons name="calendar-outline" size={20} color={colors.subtext} />
+              <Text style={[styles.dateTimeText, { color: colors.text }]}>{formatDate(date)}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.dateTimeButton} onPress={() => setShowTimeModal(true)}>
-              <Ionicons name="time-outline" size={20} color="#666" />
-              <Text style={styles.dateTimeText}>{formatTime(time)}</Text>
+            <TouchableOpacity style={[styles.dateTimeButton, { backgroundColor: colors.muted, borderColor: colors.border }]} onPress={() => setShowTimeModal(true)}>
+              <Ionicons name="time-outline" size={20} color={colors.subtext} />
+              <Text style={[styles.dateTimeText, { color: colors.text }]}>{formatTime(time)}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -185,14 +187,14 @@ export default function PostNewScreen({ navigation }) {
               <View key={index} style={styles.imageContainer}>
                 <Image source={{ uri: image.uri }} style={styles.image} />
                 <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
-                  <Ionicons name="close" size={16} color="white" />
+                  <Ionicons name="close" size={16} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))}
             {images.length < 3 && (
-              <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-                <Ionicons name="camera-outline" size={24} color="#666" />
-                <Text style={styles.addImageText}>Fotoğraf Ekle</Text>
+              <TouchableOpacity style={[styles.addImageButton, { borderColor: colors.border, backgroundColor: colors.muted }]} onPress={pickImage}>
+                <Ionicons name="camera-outline" size={24} color={colors.subtext} />
+                <Text style={[styles.addImageText, { color: colors.subtext }]}>Fotoğraf Ekle</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -200,15 +202,18 @@ export default function PostNewScreen({ navigation }) {
 
         {/* Urgent Toggle */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.urgentToggle} onPress={() => setUrgent(!urgent)}>
+          <TouchableOpacity
+            style={[styles.urgentToggle, { borderColor: colors.border, backgroundColor: colors.muted }]}
+            onPress={() => setUrgent(!urgent)}
+          >
             <View style={styles.urgentInfo}>
-              <Ionicons name="alert-circle-outline" size={20} color="#ef4444" />
+              <Ionicons name="alert-circle-outline" size={20} color={urgent ? colors.primary : colors.subtext} />
               <View style={styles.urgentText}>
-                <Text style={styles.urgentTitle}>Acil Görev</Text>
-                <Text style={styles.urgentDescription}>Bu görev acil olarak işaretlensin</Text>
+                <Text style={[styles.urgentTitle, { color: colors.text }]}>Acil İlan</Text>
+                <Text style={[styles.urgentDescription, { color: colors.subtext }]}>Bu ilan acil olarak işaretlensin</Text>
               </View>
             </View>
-            <View style={[styles.switch, urgent && styles.switchActive]}>
+            <View style={[styles.switch, urgent ? { backgroundColor: colors.primary } : { backgroundColor: colors.border }]}>
               <View style={[styles.switchThumb, urgent && styles.switchThumbActive]} />
             </View>
           </TouchableOpacity>
@@ -222,22 +227,16 @@ export default function PostNewScreen({ navigation }) {
         animationType="slide"
         onRequestClose={() => setShowDateModal(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Tarih Seç</Text>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowDateModal(false)}
-            >
-              <Ionicons name="close" size={24} color="#666" />
+        <View style={[styles.modalContainer, { backgroundColor: "rgba(0,0,0,0.5)" }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Tarih Seç</Text>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowDateModal(false)}>
+              <Ionicons name="close" size={24} color={colors.subtext} />
             </TouchableOpacity>
             {/* Burada basit bir tarih seçici ekleyebilirsiniz */}
             <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                // Şimdilik sadece modalı kapatıyoruz
-                setShowDateModal(false)
-              }}
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={() => setShowDateModal(false)}
             >
               <Text style={styles.modalButtonText}>Tamam</Text>
             </TouchableOpacity>
@@ -252,22 +251,18 @@ export default function PostNewScreen({ navigation }) {
         animationType="slide"
         onRequestClose={() => setShowTimeModal(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Saat Seç</Text>
+        <View style={[styles.modalContainer, { backgroundColor: "rgba(0,0,0,0.5)" }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Saat Seç</Text>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setShowTimeModal(false)}
             >
-              <Ionicons name="close" size={24} color="#666" />
+              <Ionicons name="close" size={24} color={colors.subtext} />
             </TouchableOpacity>
-            {/* Burada basit bir saat seçici ekleyebilirsiniz */}
             <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                // Şimdilik sadece modalı kapatıyoruz
-                setShowTimeModal(false)
-              }}
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={() => setShowTimeModal(false)}
             >
               <Text style={styles.modalButtonText}>Tamam</Text>
             </TouchableOpacity>
@@ -281,7 +276,7 @@ export default function PostNewScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    // backgroundColor kaldırıldı; runtime'da theme veriliyor
   },
   header: {
     flexDirection: "row",
@@ -444,7 +439,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e1e1e1",
     borderRadius: 12,
-    backgroundColor: "#f8f9fa",
+    // backgroundColor: "#f8f9fa",
   },
   urgentInfo: {
     flexDirection: "row",
@@ -457,11 +452,11 @@ const styles = StyleSheet.create({
   urgentTitle: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1a1a1a",
+    // color runtime'da
   },
   urgentDescription: {
     fontSize: 12,
-    color: "#666",
+    // color runtime'da
     marginTop: 2,
   },
   switch: {
@@ -492,7 +487,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: "white",
+    // backgroundColor runtime'da
     borderRadius: 20,
     padding: 20,
     width: "80%",
@@ -502,6 +497,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 20,
+    // color runtime'da
   },
   modalCloseButton: {
     position: "absolute",
@@ -509,7 +505,7 @@ const styles = StyleSheet.create({
     top: 10,
   },
   modalButton: {
-    backgroundColor: "#10b981",
+    // backgroundColor runtime'da
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,

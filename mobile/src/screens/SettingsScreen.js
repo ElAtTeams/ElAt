@@ -34,10 +34,10 @@ export default function SettingsScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Hesap</Text>
-        <View style={styles.rowLine(colors)}>
-          <Text style={styles.rowText(colors)}>Bildirimler</Text>
-          <Switch value={notif} onValueChange={setNotif} />
-        </View>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("NotificationSettings")}>
+          <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Bildirim Ayarları</Text>
+        </TouchableOpacity>
         <View style={styles.rowLine(colors)}>
           <Text style={styles.rowText(colors)}>Okundu bilgileri</Text>
           <Switch value={readReceipts} onValueChange={setReadReceipts} />
@@ -60,6 +60,12 @@ export default function SettingsScreen({ navigation }) {
         <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("KVKK")}>
           <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
           <Text style={styles.itemText(colors)}>KVKK Aydınlatma Metni</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Diğer</Text>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("Support")}>
+          <Ionicons name="heart-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Destek Ol</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.logout(colors)}>

@@ -30,6 +30,8 @@ import ExploreAllScreen from "./src/screens/ExploreAllScreen"
 import PrivacyPolicyScreen from "./src/screens/legal/PrivacyPolicyScreen"
 import TermsScreen from "./src/screens/legal/TermsScreen"
 import KvkkScreen from "./src/screens/legal/KvkkScreen"
+import NotificationSettingsScreen from "./src/screens/settings/NotificationSettingsScreen"
+import SupportScreen from "./src/screens/settings/SupportScreen"
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -128,7 +130,9 @@ function MainStack() {
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Terms" component={TermsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="KVKK" component={KvkkScreen} options={{ headerShown: false }} />
-      </Stack.Navigator>
+      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
+    </Stack.Navigator>
   )
 }
 

@@ -14,6 +14,7 @@ export default function ProfileScreen({ navigation, route }) {
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState({})
   const [activeTab, setActiveTab] = useState("posts") // "posts", "reviews", "badges"
+  const [avatarError, setAvatarError] = useState(false)
 
   const isOwnProfile = !userId || userId === currentUser?.id
 
@@ -23,11 +24,10 @@ export default function ProfileScreen({ navigation, route }) {
   }, [userId])
 
   const loadUserProfile = () => {
-    // API call to load user profile
     setUser({
       id: userId || currentUser?.id,
-      name: isOwnProfile ? currentUser?.name : "Mehmet Aydın",
-      avatar: isOwnProfile ? currentUser?.avatar : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
+      name: isOwnProfile ? (currentUser?.name || "Komşu") : "Mehmet Aydın",
+      avatar: (isOwnProfile ? currentUser?.avatar : null) || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
       bio: "Mahallemizde yardımlaşmayı seven, güvenilir bir komşu. Her zaman elimden geldiğince yardım etmeye hazırım.",
       location: "Kadıköy, İstanbul",
       joinDate: "Ocak 2023",
@@ -100,7 +100,7 @@ export default function ProfileScreen({ navigation, route }) {
         <TouchableOpacity
           key={post.id}
           style={styles.postCard}
-          onPress={() => navigation.navigate("PostDetail", { task: post })}
+          onPress={() => navigation.navigate("PostDetail", { taskId: post.id })} // task yerine id gönder
         >
           <Image source={{ uri: post.image }} style={styles.postImage} />
           <View style={styles.postInfo}>
@@ -187,7 +187,11 @@ export default function ProfileScreen({ navigation, route }) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
         <View style={styles.profileSection}>
-          <Image source={{ uri: user.avatar }} style={styles.profileAvatar} />
+          {(!avatarError && user?.avatar) ? (
+            <Image source={{ uri: user.avatar }} style={styles.profileAvatar} onError={() => setAvatarError(true)} />
+          ) : (
+            <Ionicons name="person-circle-outline" size={96} color={colors.subtext} />
+          )}
           <Text style={[styles.profileName, { color: colors.text }]}>{user.name}</Text>
           <Text style={[styles.profileLocation, { color: colors.subtext }]}>📍 {user.location}</Text>
           <Text style={[styles.profileBio, { color: colors.subtext }]}>{user.bio}</Text>
@@ -262,7 +266,7 @@ export default function ProfileScreen({ navigation, route }) {
                 <TouchableOpacity
                   key={post.id}
                   style={[styles.postCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                  onPress={() => navigation.navigate("PostDetail", { task: post })}
+                  onPress={() => navigation.navigate("PostDetail", { taskId: post.id })}
                 >
                   <Image source={{ uri: post.image }} style={styles.postImage} />
                   <View style={styles.postInfo}>

@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import MapView, { Marker } from "react-native-maps"
-import { Sizes, getFontSize, getSize, platformValues } from "../utils/dimensions"
 import { useThemeColors } from "../store/themeStore"
 
 export default function ExploreAllScreen({ navigation, route }) {
@@ -34,7 +32,7 @@ export default function ExploreAllScreen({ navigation, route }) {
         <View style={styles.meta}>
           <Text style={[styles.price, { color: colors.primary }]}>{item.price}</Text>
           <View style={styles.rating}>
-            <Ionicons name="star" size={Sizes.icon.s} color="#fbbf24" />
+            <Ionicons name="star" size={14} color="#fbbf24" />
             <Text style={[styles.ratingText, { color: colors.subtext }]}>{item.rating}</Text>
           </View>
         </View>
@@ -55,7 +53,7 @@ export default function ExploreAllScreen({ navigation, route }) {
       </View>
 
       <View style={[styles.searchBar, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-        <Ionicons name="search-outline" size={Sizes.icon.m} color={colors.subtext} />
+        <Ionicons name="search-outline" size={18} color={colors.subtext} />
         <TextInput
           style={[styles.input, { color: colors.text }]}
           placeholder="Ara..."
@@ -64,7 +62,7 @@ export default function ExploreAllScreen({ navigation, route }) {
           onChangeText={setQuery}
         />
         <TouchableOpacity style={styles.filterBtn}>
-          <Ionicons name="options-outline" size={Sizes.icon.m} color={colors.subtext} />
+          <Ionicons name="options-outline" size={18} color={colors.subtext} />
         </TouchableOpacity>
       </View>
 
@@ -79,15 +77,12 @@ export default function ExploreAllScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <View style={{ flex: 1, margin: Sizes.spacing.l, borderRadius: Sizes.borderRadius.l, overflow: "hidden" }}>
-          <MapView
-            style={{ flex: 1 }}
-            initialRegion={{ latitude: 41.0082, longitude: 28.9784, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
-          >
+        <View style={{ flex: 1, margin: 16, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
+          <MapView style={{ flex: 1 }} initialRegion={{ latitude: 41.0082, longitude: 28.9784, latitudeDelta: 0.02, longitudeDelta: 0.02 }}>
             {filtered.map((i) => (
               <Marker key={i.id} coordinate={i.location || { latitude: 41.0082, longitude: 28.9784 }}>
-                <View style={{ backgroundColor: "#10b981", padding: Sizes.spacing.xs, borderRadius: Sizes.borderRadius.s }}>
-                  <Ionicons name="pricetag-outline" size={Sizes.icon.s} color="#fff" />
+                <View style={{ backgroundColor: colors.primary, padding: 6, borderRadius: 8 }}>
+                  <Ionicons name="pricetag-outline" size={14} color="#fff" />
                 </View>
               </Marker>
             ))}
@@ -99,48 +94,19 @@ export default function ExploreAllScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Sizes.spacing.l,
-    paddingTop: platformValues.statusBarHeight + Sizes.spacing.l,
-    paddingBottom: Sizes.spacing.m,
-  },
-  headerTitle: { fontSize: getFontSize(18, 20), fontWeight: "700", color: "#1a1a1a" },
-
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Sizes.spacing.s,
-    marginHorizontal: Sizes.spacing.l,
-    marginBottom: Sizes.spacing.s,
-    paddingHorizontal: Sizes.spacing.m,
-    borderRadius: Sizes.borderRadius.l,
-    borderWidth: 1,
-    borderColor: "#e1e1e1",
-    backgroundColor: "#f8f9fa",
-    height: Sizes.input.height,
-  },
-  input: { flex: 1, fontSize: getFontSize(16, 18), color: "#1a1a1a" },
-  filterBtn: { padding: Sizes.spacing.xs },
-
-  list: { paddingHorizontal: Sizes.spacing.l, paddingBottom: Sizes.spacing.l },
-  card: {
-    flex: 1,
-    margin: Sizes.spacing.xs,
-    borderRadius: Sizes.borderRadius.l,
-    borderWidth: 1,
-    borderColor: "#e1e1e1",
-    backgroundColor: "#fff",
-    overflow: "hidden",
-  },
-  image: { width: "100%", height: getSize(120, 150), backgroundColor: "#f3f4f6" },
-  info: { padding: Sizes.spacing.m },
-  title: { fontSize: getFontSize(14, 16), fontWeight: "700", color: "#1a1a1a", marginBottom: Sizes.spacing.xs },
-  desc: { fontSize: getFontSize(12, 14), color: "#666", marginBottom: Sizes.spacing.s },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 18, fontWeight: "700" },
+  searchBar: { flexDirection: "row", alignItems: "center", gap: 8, margin: 16, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, height: 44 },
+  input: { flex: 1, fontSize: 16 },
+  filterBtn: { padding: 4 },
+  list: { paddingHorizontal: 12, paddingBottom: 24 },
+  card: { flex: 1, margin: 4, borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  image: { width: "100%", height: 140, backgroundColor: "#222" },
+  info: { padding: 12 },
+  title: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  desc: { fontSize: 12, marginBottom: 8 },
   meta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  price: { fontSize: getFontSize(14, 16), color: "#10b981", fontWeight: "700" },
+  price: { fontSize: 14, fontWeight: "700" },
   rating: { flexDirection: "row", alignItems: "center" },
-  ratingText: { marginLeft: 4, color: "#666" },
+  ratingText: { marginLeft: 4, fontSize: 12 },
 })
