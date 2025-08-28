@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from "react"
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  FlatList,
-  Dimensions,
+  View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Dimensions, Modal
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../contexts/AuthContext"
+import { useThemeColors } from "../store/themeStore"
 
 const { width } = Dimensions.get("window")
 
@@ -22,6 +15,11 @@ export default function ExploreScreen({ navigation }) {
   const [categories, setCategories] = useState([])
   const [featuredItems, setFeaturedItems] = useState([])
   const { user, location } = useAuth()
+  const colors = useThemeColors()
+  const [filtersVisible, setFiltersVisible] = useState(false)
+  const [minPrice, setMinPrice] = useState("")
+  const [maxPrice, setMaxPrice] = useState("")
+  const [selectedCats, setSelectedCats] = useState(new Set())
 
   useEffect(() => {
     loadCategories()
@@ -64,82 +62,55 @@ export default function ExploreScreen({ navigation }) {
     ])
   }
 
-  const renderCategory = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.categoryCard, { borderColor: item.color }]}
-      onPress={() => navigation.navigate("Category", { category: item })}
-    >
-      <View style={[styles.categoryIcon, { backgroundColor: item.color + "20" }]}>
-        <Ionicons name={item.icon} size={24} color={item.color} />
-      </View>
-      <Text style={styles.categoryName}>{item.name}</Text>
-    </TouchableOpacity>
-  )
-
-  const renderFeaturedItem = ({ item }) => (
-    <TouchableOpacity style={styles.itemCard} onPress={() => navigation.navigate("ItemDetail", { item })}>
-      <Image source={{ uri: item.image }} style={styles.itemImage} />
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        <Text style={styles.itemDescription}>{item.description}</Text>
-        <View style={styles.itemMeta}>
-          <Text style={styles.itemPrice}>{item.price}</Text>
-          <View style={styles.itemRating}>
-            <Ionicons name="star" size={14} color="#fbbf24" />
-            <Text style={styles.ratingText}>{item.rating}</Text>
-          </View>
-        </View>
-        <View style={styles.itemFooter}>
-          <Text style={styles.itemDistance}>📍 {item.distance}</Text>
-          <Text style={styles.itemOwner}>👤 {item.owner}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  )
-
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={20} color="#10b981" />
-          <Text style={styles.locationText}>{location ? "Mevcut konum" : "Konum alınıyor..."}</Text>
+          <Ionicons name="location-outline" size={20} color={colors.primary} />
+          <Text style={[styles.locationText, { color: colors.text }]}>{user?.locationName || "Keşfet"}</Text>
         </View>
         <TouchableOpacity style={styles.profileButton}>
-          <Ionicons name="person-circle-outline" size={28} color="#666" />
+          <Ionicons name="person-circle-outline" size={28} color={colors.subtext} />
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+        <Ionicons name="search-outline" size={20} color={colors.subtext} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Ne arıyorsunuz?"
+          placeholderTextColor={colors.subtext}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={20} color="#666" />
+        <TouchableOpacity style={styles.filterButton} onPress={() => setFiltersVisible(true)}>
+          <Ionicons name="options-outline" size={20} color={colors.subtext} />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeTitle}>Merhaba {user?.name || "Komşu"}! 👋</Text>
-          <Text style={styles.welcomeSubtitle}>Komşularınızla paylaşın, ihtiyacınızı karşılayın</Text>
+          <Text style={[styles.welcomeTitle, { color: colors.text }]}>Merhaba {user?.name || "Komşu"}! 👋</Text>
+          <Text style={[styles.welcomeSubtitle, { color: colors.subtext }]}>Komşularınızla paylaşın, ihtiyacınızı karşılayın</Text>
         </View>
 
         {/* Categories */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kategoriler</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Kategoriler</Text>
           <FlatList
             data={categories}
-            renderItem={renderCategory}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={[styles.categoryCard, { borderColor: item.color, backgroundColor: colors.surface }]}>
+                <View style={[styles.categoryIcon, { backgroundColor: item.color + "20" }]}>
+                  <Ionicons name={item.icon} size={24} color={item.color} />
+                </View>
+                <Text style={[styles.categoryName, { color: colors.text }]}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
             keyExtractor={(item) => item.id.toString()}
             numColumns={3}
             scrollEnabled={false}
@@ -150,20 +121,97 @@ export default function ExploreScreen({ navigation }) {
         {/* Featured Items */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Öne Çıkanlar</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Tümünü Gör</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Öne Çıkanlar</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("ExploreAll", { items: featuredItems })}>
+              <Text style={[styles.seeAllText, { color: colors.primary }]}>Tümünü Gör</Text>
             </TouchableOpacity>
           </View>
           <FlatList
             data={featuredItems}
-            renderItem={renderFeaturedItem}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={[styles.itemCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Image source={{ uri: item.image }} style={styles.itemImage} />
+                <View style={styles.itemInfo}>
+                  <Text style={[styles.itemTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.itemDescription, { color: colors.subtext }]}>{item.description}</Text>
+                  <View style={styles.itemMeta}>
+                    <Text style={[styles.itemPrice, { color: colors.primary }]}>{item.price}</Text>
+                    <View style={styles.itemRating}>
+                      <Ionicons name="star" size={14} color="#fbbf24" />
+                      <Text style={[styles.ratingText, { color: colors.subtext }]}>{item.rating}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.itemFooter}>
+                    <Text style={[styles.itemDistance, { color: colors.subtext }]}>📍 {item.distance}</Text>
+                    <Text style={[styles.itemOwner, { color: colors.subtext }]}>👤 {item.owner}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
             contentContainerStyle={styles.itemsList}
           />
         </View>
       </ScrollView>
+
+      {/* Filter Modal */}
+      <Modal visible={filtersVisible} animationType="slide" transparent onRequestClose={() => setFiltersVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.surface, padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>Filtreler</Text>
+              <TouchableOpacity onPress={() => setFiltersVisible(false)}>
+                <Ionicons name="close" size={22} color={colors.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+              <TextInput
+                style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
+                placeholder="Min ₺"
+                placeholderTextColor={colors.subtext}
+                keyboardType="numeric"
+                value={minPrice}
+                onChangeText={setMinPrice}
+              />
+              <TextInput
+                style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
+                placeholder="Maks ₺"
+                placeholderTextColor={colors.subtext}
+                keyboardType="numeric"
+                value={maxPrice}
+                onChangeText={setMaxPrice}
+              />
+            </View>
+
+            <Text style={{ color: colors.subtext, marginBottom: 8 }}>Kategoriler</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {categories.map((c) => {
+                const active = selectedCats.has(c.id)
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    onPress={() => {
+                      const next = new Set(selectedCats)
+                      active ? next.delete(c.id) : next.add(c.id)
+                      setSelectedCats(next)
+                    }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: active ? c.color : colors.border, backgroundColor: active ? c.color + "22" : colors.surface }}
+                  >
+                    <Text style={{ color: active ? c.color : colors.text, fontWeight: "600" }}>{c.name}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 16 }}>
+              <TouchableOpacity onPress={() => { setSelectedCats(new Set()); setMinPrice(""); setMaxPrice(""); }}><Text style={{ color: colors.subtext }}>Sıfırla</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setFiltersVisible(false)}><Text style={{ color: colors.primary, fontWeight: "700" }}>Uygula</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }

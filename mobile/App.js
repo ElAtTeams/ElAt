@@ -3,8 +3,9 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { Ionicons } from "@expo/vector-icons"
-import { View } from "react-native"
+import { View, StatusBar } from "react-native"
 import { useAppStore } from "./src/store/useAppStore"
+import { useThemeMeta } from "./src/store/themeStore"
 
 // Auth Screens
 import WelcomeScreen from "./src/screens/WelcomeScreen"
@@ -25,6 +26,10 @@ import NotificationsScreen from "./src/screens/NotificationsScreen"
 import ChatScreen from "./src/screens/ChatScreen"
 import ProfileEditScreen from "./src/screens/ProfileEditScreen"
 import SettingsScreen from "./src/screens/SettingsScreen"
+import ExploreAllScreen from "./src/screens/ExploreAllScreen"
+import PrivacyPolicyScreen from "./src/screens/legal/PrivacyPolicyScreen"
+import TermsScreen from "./src/screens/legal/TermsScreen"
+import KvkkScreen from "./src/screens/legal/KvkkScreen"
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -41,7 +46,32 @@ function AuthStack() {
   )
 }
 
+function AppNavigator() {
+  const isLoggedIn = useAppStore((s) => s.isLoggedIn)
+  const { colors: ui, isDark } = useThemeMeta()
+
+  const navTheme = {
+    dark: isDark,
+    colors: {
+      primary: ui.primary,
+      background: ui.background,
+      card: ui.surface,
+      text: ui.text,
+      border: ui.border,
+      notification: ui.primary,
+    },
+  }
+
+  return (
+    <NavigationContainer theme={navTheme}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={ui.background} />
+      {isLoggedIn ? <MainStack /> : <AuthStack />}
+    </NavigationContainer>
+  )
+}
+
 function MainTabs() {
+  const { colors: ui } = useThemeMeta()
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -56,7 +86,7 @@ function MainTabs() {
           if (route.name === "PostNew") {
             return (
               <View style={{
-                width: 56, height: 56, borderRadius: 28, backgroundColor: "#10b981",
+                width: 56, height: 56, borderRadius: 28, backgroundColor: ui.primary,
                 justifyContent: "center", alignItems: "center", marginTop: -20,
                 shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3,
                 shadowRadius: 8, elevation: 8,
@@ -67,10 +97,10 @@ function MainTabs() {
           }
           return <Ionicons name={iconName} size={size} color={color} />
         },
-        tabBarActiveTintColor: "#10b981",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: ui.primary,
+        tabBarInactiveTintColor: ui.subtext,
         headerShown: false,
-        tabBarStyle: { height: 80, paddingBottom: 20, paddingTop: 10 },
+        tabBarStyle: { height: 80, paddingBottom: 20, paddingTop: 10, backgroundColor: ui.surface, borderTopColor: ui.border, borderTopWidth: 1 },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Ana Sayfa" }} />
@@ -85,21 +115,21 @@ function MainTabs() {
 
 function MainStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+      {/* Özel header kullanan yeni ekranlar */}
       <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
-    </Stack.Navigator>
+      <Stack.Screen name="ExploreAll" component={ExploreAllScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Terms" component={TermsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="KVKK" component={KvkkScreen} options={{ headerShown: false }} />
+      </Stack.Navigator>
   )
-}
-
-function AppNavigator() {
-  const isLoggedIn = useAppStore((s) => s.isLoggedIn)
-  return <NavigationContainer>{isLoggedIn ? <MainStack /> : <AuthStack />}</NavigationContainer>
 }
 
 export default function App() {

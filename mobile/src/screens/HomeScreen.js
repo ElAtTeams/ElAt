@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useRef, useState, useEffect } from "react"
+import { Sizes, getSize, getFontSize, platformValues } from "../utils/dimensions"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, FlatList, Image } from "react-native"
 import MapView, { Marker } from "react-native-maps"
 import { Ionicons } from "@expo/vector-icons"
-import { Sizes, getFontSize, getSize, platformValues } from "../utils/dimensions"
+import { useAuth } from "../contexts/AuthContext"
+import { useThemeColors } from "../store/themeStore"
 
 
 export default function HomeScreen({ navigation }) {
@@ -12,6 +14,10 @@ export default function HomeScreen({ navigation }) {
   const [tasks, setTasks] = useState([])
   const [nearbyTasks, setNearbyTasks] = useState([])
   const user = null // demo için
+  const { location } = useAuth?.() || {}
+  const fabSize = getSize(56, 64) // FAB boyutu (HATA: fabSize undefined -> fix)
+  const mapRef = useRef(null)
+  const colors = useThemeColors()
 
   useEffect(() => {
     loadTasks()
@@ -157,50 +163,56 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   )
 
-  // FAB için boyut (yarıçap hesaplamak için)
-  const fabSize = getSize(56, 64)
+  const recenterToUser = () => { // HATA: recenterToUser undefined -> fix
+    const lat = location?.coords?.latitude ?? 41.0082
+    const lng = location?.coords?.longitude ?? 28.9784
+    mapRef.current?.animateToRegion(
+      { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      600
+    )
+  }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={Sizes.icon.m} color="#10b981" />
-          <Text style={styles.locationText}>Kadıköy, İstanbul</Text>
+          <Ionicons name="location-outline" size={Sizes.icon.m} color={colors.primary} />
+          <Text style={[styles.locationText, { color: colors.text }]}>Kadıköy, İstanbul</Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => navigation.navigate("Settings")} style={{ marginLeft: Sizes.spacing.m }}>
-            <Ionicons name="settings-outline" size={Sizes.icon.l} color="#666" />
+            <Ionicons name="settings-outline" size={Sizes.icon.l} color={colors.subtext} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={{ marginLeft: Sizes.spacing.m }}>
-            <Ionicons name="notifications-outline" size={Sizes.icon.l} color="#666" />
+            <Ionicons name="notifications-outline" size={Sizes.icon.l} color={colors.subtext} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeTitle}>Merhaba {user?.name || "Komşu"}! 👋</Text>
-        <Text style={styles.welcomeSubtitle}>Bugün nasıl yardımlaşalım?</Text>
+        <Text style={[styles.welcomeTitle, { color: colors.text }]}>Merhaba {user?.name || "Komşu"}! 👋</Text>
+        <Text style={[styles.welcomeSubtitle, { color: colors.subtext }]}>Bugün nasıl yardımlaşalım?</Text>
       </View>
 
       {/* Quick Stats */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>Aktif Görev</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.statNumber, { color: colors.primary }]}>12</Text>
+          <Text style={[styles.statLabel, { color: colors.subtext }]}>Aktif Görev</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>8</Text>
-          <Text style={styles.statLabel}>Yakındaki</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.statNumber, { color: colors.primary }]}>8</Text>
+          <Text style={[styles.statLabel, { color: colors.subtext }]}>Yakındaki</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>3</Text>
-          <Text style={styles.statLabel}>Acil</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.statNumber, { color: colors.primary }]}>3</Text>
+          <Text style={[styles.statLabel, { color: colors.subtext }]}>Acil</Text>
         </View>
       </ScrollView>
 
-      {/* Tools over list (map toggle right aligned) */}
+      {/* Araçlar (Harita/Liste butonu sağda) */}
       <View style={styles.toolsRow}>
         <TouchableOpacity style={styles.mapToggleBtn} onPress={() => setViewMode(viewMode === "list" ? "map" : "list")}>
           <Ionicons name={viewMode === "list" ? "map-outline" : "list-outline"} size={Sizes.icon.m} color="#10b981" />
@@ -208,44 +220,93 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* View Toggle */}
+      {/* İçerik */}
       {viewMode === "map" ? (
-        <View style={styles.mapContainer}>
+        <View style={[styles.mapContainer, { height: Math.max(getSize(220, 300), Sizes.screenHeight * 0.26), backgroundColor: colors.surface, borderColor: colors.border }]}>
           <MapView
+            ref={mapRef}
             style={styles.map}
             initialRegion={{
-              latitude: 41.0082,
-              longitude: 28.9784,
+              latitude: location?.coords?.latitude ?? 41.0082,
+              longitude: location?.coords?.longitude ?? 28.9784,
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
             }}
           >
             {tasks.map((task) => (
-              <Marker
-                key={task.id}
-                coordinate={task.location}
-                onPress={() => navigation.navigate("PostDetail", { task })}
-              >
+              <Marker key={task.id} coordinate={task.location} onPress={() => navigation.navigate("PostDetail", { task })}>
                 <View style={[styles.mapMarker, { backgroundColor: getCategoryColor(task.category) }]}>
-                  <Ionicons name={getCategoryIcon(task.category)} size={Sizes.icon.s} color="white" />
+                  <Ionicons name={getCategoryIcon(task.category)} size={Sizes.icon.s} color="#fff" />
                 </View>
               </Marker>
             ))}
           </MapView>
+
+          <TouchableOpacity style={[styles.recenterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={recenterToUser}>
+            <Ionicons name="locate" size={Sizes.icon.m} color={colors.primary} />
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={tasks}
-          renderItem={renderTaskCard}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.taskCard,
+                item.urgent && styles.urgentCard,
+                { backgroundColor: colors.surface, borderColor: item.urgent ? "#ef4444" : colors.border },
+              ]}
+              onPress={() => navigation.navigate("PostDetail", { task: item })}
+            >
+              {item.urgent && (
+                <View style={styles.urgentBadge}>
+                  <Text style={styles.urgentText}>ACİL</Text>
+                </View>
+              )}
+
+              <View style={styles.taskHeader}>
+                <View style={[styles.categoryIcon, { backgroundColor: getCategoryColor(item.category) + "20" }]}>
+                  <Ionicons name={getCategoryIcon(item.category)} size={20} color={getCategoryColor(item.category)} />
+                </View>
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskTitle}>{item.title}</Text>
+                  <Text style={styles.taskDistance}>📍 {item.distance}</Text>
+                </View>
+                <Text style={styles.taskPrice}>{item.price}</Text>
+              </View>
+
+              <Text style={styles.taskDescription}>{item.description}</Text>
+
+              <View style={styles.taskFooter}>
+                <View style={styles.userInfo}>
+                  <Image source={{ uri: item.user.avatar }} style={styles.userAvatar} />
+                  <View>
+                    <Text style={styles.userName}>{item.user.name}</Text>
+                    <View style={styles.rating}>
+                      <Ionicons name="star" size={12} color="#fbbf24" />
+                      <Text style={styles.ratingText}>{item.user.rating}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.timeInfo}>
+                  <Ionicons name="time-outline" size={14} color="#666" />
+                  <Text style={styles.timeText}>{item.time}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.tasksList}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={[styles.fab, { width: fabSize, height: fabSize, borderRadius: fabSize / 2 }]} onPress={() => navigation.navigate("PostNew")}>
-        <Ionicons name="add" size={Sizes.icon.l} color="white" />
+      {/* FAB */}
+      <TouchableOpacity
+        style={[styles.fab, { width: fabSize, height: fabSize, borderRadius: fabSize / 2, backgroundColor: colors.primary }]}
+        onPress={() => navigation.navigate("PostNew")}
+      >
+        <Ionicons name="add" size={Sizes.icon.l} color="#fff" />
       </TouchableOpacity>
     </View>
   )
@@ -301,7 +362,6 @@ const styles = StyleSheet.create({
     paddingLeft: Sizes.spacing.l,
     marginBottom: Sizes.spacing.m,
     paddingVertical: Sizes.spacing.xs,
-    height: getSize(100, 150),
   },
   statCard: {
     backgroundColor: "#f8f9fa",
@@ -311,7 +371,8 @@ const styles = StyleSheet.create({
     marginRight: Sizes.spacing.m,
     alignItems: "center",
     minWidth: getSize(88, 100),
-    maxHeight: getSize(56, 64),
+    minHeight: getSize(64, 72), // rahat nefes alan
+    justifyContent: "center",
   },
   statNumber: {
     fontSize: getFontSize(18, 20),
@@ -325,13 +386,32 @@ const styles = StyleSheet.create({
   },
 
   mapContainer: {
-    flex: 1,
-    margin: Sizes.spacing.l,
+    marginHorizontal: Sizes.spacing.l,
+    marginBottom: Sizes.spacing.l,
     borderRadius: Sizes.borderRadius.l,
     overflow: "hidden",
+    backgroundColor: "#fff",
+    borderWidth: Sizes.borderWidth.thin,
+    borderColor: "#ececec",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
   },
   map: {
-    flex: 1,
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0, // tam doldur
+  },
+  recenterBtn: {
+    position: "absolute",
+    top: Sizes.spacing.m,
+    right: Sizes.spacing.m,
+    backgroundColor: "#fff",
+    borderRadius: Sizes.borderRadius.circle,
+    padding: Sizes.spacing.s,
+    borderWidth: Sizes.borderWidth.default,
+    borderColor: "#e5e5e5",
   },
   mapMarker: {
     width: getSize(32, 40),
@@ -467,7 +547,6 @@ const styles = StyleSheet.create({
   mapToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Sizes.spacing.xs,
     paddingHorizontal: Sizes.spacing.m,
     paddingVertical: Sizes.spacing.xs,
     borderRadius: Sizes.borderRadius.m,

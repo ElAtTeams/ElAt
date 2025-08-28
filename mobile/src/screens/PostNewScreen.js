@@ -4,6 +4,7 @@ import { useState } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Modal } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
+import { useThemeColors } from "../store/themeStore"
 
 export default function PostNewScreen({ navigation }) {
   const [title, setTitle] = useState("")
@@ -17,6 +18,8 @@ export default function PostNewScreen({ navigation }) {
   const [images, setImages] = useState([])
   const [urgent, setUrgent] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const colors = useThemeColors()
 
   const categories = [
     { id: "pet", name: "Evcil Hayvan", icon: "paw-outline", color: "#f59e0b" },
@@ -90,15 +93,15 @@ export default function PostNewScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color="#1a1a1a" />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yeni Görev</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni Görev</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={loading}>
-          <Text style={[styles.publishButton, loading && styles.disabledButton]}>
+          <Text style={[styles.publishButton, { color: loading ? colors.subtext : colors.primary }]}>
             {loading ? "Yayınlanıyor..." : "Yayınla"}
           </Text>
         </TouchableOpacity>
@@ -107,20 +110,21 @@ export default function PostNewScreen({ navigation }) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Title */}
         <View style={styles.section}>
-          <Text style={styles.label}>Başlık *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Başlık *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.text }]}
             placeholder="Görev başlığını yazın"
+            placeholderTextColor={colors.subtext}
             value={title}
             onChangeText={setTitle}
             maxLength={50}
           />
-          <Text style={styles.charCount}>{title.length}/50</Text>
+          <Text style={[styles.charCount, { color: colors.subtext }]}>{title.length}/50</Text>
         </View>
 
         {/* Description */}
         <View style={styles.section}>
-          <Text style={styles.label}>Açıklama *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Açıklama *</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Görev detaylarını açıklayın"
@@ -135,7 +139,7 @@ export default function PostNewScreen({ navigation }) {
 
         {/* Category */}
         <View style={styles.section}>
-          <Text style={styles.label}>Kategori *</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Kategori *</Text>
           <View style={styles.categoriesGrid}>
             {categories.map((item) => (
               <CategoryButton key={item.id} item={item} />
@@ -145,7 +149,7 @@ export default function PostNewScreen({ navigation }) {
 
         {/* Price */}
         <View style={styles.section}>
-          <Text style={styles.label}>Ücret (Opsiyonel)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Ücret (Opsiyonel)</Text>
           <View style={styles.priceContainer}>
             <Text style={styles.currencySymbol}>₺</Text>
             <TextInput
@@ -160,7 +164,7 @@ export default function PostNewScreen({ navigation }) {
 
         {/* Date & Time */}
         <View style={styles.section}>
-          <Text style={styles.label}>Tarih ve Saat</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Tarih ve Saat</Text>
           <View style={styles.dateTimeContainer}>
             <TouchableOpacity style={styles.dateTimeButton} onPress={() => setShowDateModal(true)}>
               <Ionicons name="calendar-outline" size={20} color="#666" />
@@ -175,7 +179,7 @@ export default function PostNewScreen({ navigation }) {
 
         {/* Images */}
         <View style={styles.section}>
-          <Text style={styles.label}>Fotoğraflar</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Fotoğraflar</Text>
           <View style={styles.imagesContainer}>
             {images.map((image, index) => (
               <View key={index} style={styles.imageContainer}>

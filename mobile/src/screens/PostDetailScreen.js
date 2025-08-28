@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions, Alert, ActivityIndicator } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import MapView, { Marker } from "react-native-maps"
+import { useThemeColors } from "../store/themeStore"
 
 const { width } = Dimensions.get("window")
 
 export default function PostDetailScreen({ navigation, route }) {
+  const colors = useThemeColors()
   const { taskId } = route.params || {};
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -134,30 +136,28 @@ export default function PostDetailScreen({ navigation, route }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="share-outline" size={20} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="heart-outline" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{task.title}</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Images */}
-        {task.images && task.images.length > 0 && (
+        {task.images && task.images.length > 0 ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             {task.images.map((image, index) => (
               <Image key={index} source={{ uri: image }} style={styles.taskImage} />
             ))}
           </ScrollView>
+        ) : (
+          <View style={{ width, height: 240, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" }}>
+            <Ionicons name="image-outline" size={48} color={colors.subtext} />
+          </View>
         )}
 
         <View style={styles.taskContent}>
@@ -304,17 +304,16 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
     paddingTop: 50,
-    paddingBottom: 16,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
   },
   headerActions: {
     flexDirection: "row",

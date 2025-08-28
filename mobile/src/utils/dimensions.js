@@ -1,72 +1,43 @@
-import { Dimensions, Platform } from "react-native";
+import { Dimensions, Platform } from "react-native"
 
-const { width, height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window")
 
-export const isTablet = width >= 768;
+export const isTablet = width >= 768
 
-// Referans: mevcut cihaz
-const guidelineBaseWidth = width;
-const guidelineBaseHeight = height;
+// Cihaz tabanlı oran (cihazın kendisini referans alıyoruz)
+const guidelineBaseWidth = width
+const guidelineBaseHeight = height
 
-// Ölçek fonksiyonları
-export const scale = (size) => (width / guidelineBaseWidth) * size;
-export const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+// Ölçek yardımcıları
+export const scale = (size) => (width / guidelineBaseWidth) * size
+export const verticalScale = (size) => (height / guidelineBaseHeight) * size
 export const moderateScale = (size, factor = 0.6) =>
-  size + (scale(size) - size) * factor;
+  size + (scale(size) - size) * factor
 
-// Ortak token’lar (alias’lar dahil)
+// Ortak token’lar
 export const Sizes = {
-  // spacing
   spacing: {
     xxs: moderateScale(2),
     xs: moderateScale(4),
     s: moderateScale(8),
-    small: moderateScale(8),
     m: moderateScale(16),
-    medium: moderateScale(16),
     l: moderateScale(24),
-    large: moderateScale(24),
     xl: moderateScale(32),
-    extraLarge: moderateScale(32),
     xxl: moderateScale(48),
-    huge: moderateScale(48),
   },
-
-  // border radius
   borderRadius: {
     s: moderateScale(6),
-    small: moderateScale(6),
     m: moderateScale(10),
-    medium: moderateScale(10),
     l: moderateScale(16),
-    large: moderateScale(16),
     xl: moderateScale(22),
     circle: 9999,
   },
-
-  // border width
   borderWidth: {
     thin: isTablet ? 0.7 : 0.5,
     default: isTablet ? 1.5 : 1,
     thick: isTablet ? 3 : 2,
   },
-
-  // yükseklikler
-  inputHeight: {
-    small: verticalScale(44),
-    medium: verticalScale(50),
-    large: verticalScale(56),
-    default: verticalScale(56),
-    multiline: verticalScale(96),
-  },
-  buttonHeight: {
-    small: verticalScale(44),
-    default: verticalScale(52),
-    large: verticalScale(56),
-    extraLarge: verticalScale(64),
-  },
-
-  // alias grupları (bazı ekranlar bunları bekliyor)
+  // alias grupları
   input: {
     height: verticalScale(56),
     paddingH: moderateScale(20),
@@ -75,39 +46,38 @@ export const Sizes = {
     height: verticalScale(56),
     paddingH: moderateScale(24),
   },
-
-  // ikonlar
+  // alternatif yükseklikler (geriye uyum)
+  inputHeight: {
+    small: verticalScale(44),
+    medium: verticalScale(50),
+    large: verticalScale(56),
+    default: verticalScale(56),
+  },
+  buttonHeight: {
+    small: verticalScale(44),
+    default: verticalScale(52),
+    large: verticalScale(56),
+    extraLarge: verticalScale(64),
+  },
   icon: {
     xs: scale(14),
     s: scale(18),
-    small: scale(18),
     m: scale(22),
-    medium: scale(22),
     l: scale(28),
-    large: scale(28),
     xl: scale(36),
   },
-
-  // görsel/avatar
-  avatar: {
-    s: scale(64),
-    m: scale(96),
-    l: scale(120),
-  },
-
   screenWidth: width,
   screenHeight: height,
-};
+}
 
-// Yazı ve boyut yardımcıları (tablet’te belirgin büyütme)
 export const getFontSize = (mobile, tablet) =>
-  isTablet ? tablet || mobile * 1.45 : mobile;
+  isTablet ? tablet || mobile * 1.45 : mobile
 
 export const getSize = (mobile, tablet) =>
-  isTablet ? tablet || mobile * 1.3 : mobile;
+  isTablet ? tablet || mobile * 1.3 : mobile
 
 export const platformValues = {
   statusBarHeight: Platform.OS === "ios" ? 20 : 0,
   headerHeight: Platform.OS === "ios" ? 44 : 56,
   tabBarHeight: Platform.OS === "ios" ? 49 : 56,
-};
+}

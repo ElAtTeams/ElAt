@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { Sizes, getFontSize, getSize, platformValues } from "../utils/dimensions"
+import { useThemeColors } from "../store/themeStore"
 
 export default function ChatScreen({ navigation, route }) {
   const { userName = "Komşu", userAvatar, chatId, taskTitle } = route.params || {}
@@ -12,6 +14,7 @@ export default function ChatScreen({ navigation, route }) {
     { id: "2", sender: "me", text: "Merhaba, evet köpek gezdirme için.", time: "10:27" },
   ])
   const listRef = useRef(null)
+  const colors = useThemeColors()
 
   const send = () => {
     if (!input.trim()) return
@@ -39,22 +42,29 @@ export default function ChatScreen({ navigation, route }) {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={[styles.container(colors)]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          {userAvatar ? <Image source={{ uri: userAvatar }} style={styles.headerAvatar} /> : <Ionicons name="person-circle-outline" size={28} color="#666" />}
-          <View>
-            <Text style={styles.userName}>{userName}</Text>
-            {taskTitle ? <Text style={styles.taskTitle}>📋 {taskTitle}</Text> : null}
+      <View style={styles.header(colors)}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            {userAvatar ? <Image source={{ uri: userAvatar }} style={styles.headerAvatar} /> : <Ionicons name="person-circle-outline" size={28} color={colors.subtext} />}
+            <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>{userName}</Text>
           </View>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="call-outline" size={22} color="#10b981" />
-        </TouchableOpacity>
+
+        <View style={styles.headerRight}>
+          {taskTitle ? (
+            <View style={[styles.taskPill, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <Text style={{ color: colors.subtext, fontSize: getFontSize(12, 13) }}>📋 {taskTitle}</Text>
+            </View>
+          ) : null}
+          <TouchableOpacity>
+            <Ionicons name="call-outline" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Messages */}
@@ -69,18 +79,19 @@ export default function ChatScreen({ navigation, route }) {
       />
 
       {/* Input */}
-      <View style={styles.inputBar}>
+      <View style={styles.inputBar(colors)}>
         <TouchableOpacity style={styles.iconBtn}>
-          <Ionicons name="add-outline" size={22} color="#666" />
+          <Ionicons name="add-outline" size={22} color={colors.subtext} />
         </TouchableOpacity>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, { backgroundColor: colors.muted, color: colors.text }]}
           placeholder="Mesaj yaz..."
+          placeholderTextColor={colors.subtext}
           value={input}
           onChangeText={setInput}
           multiline
         />
-        <TouchableOpacity style={styles.sendBtn} onPress={send}>
+        <TouchableOpacity style={[styles.sendBtn, { backgroundColor: colors.primary }]} onPress={send}>
           <Ionicons name="send" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -90,40 +101,43 @@ export default function ChatScreen({ navigation, route }) {
 
 const bubbleRadius = 16
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#e9ecef" },
-  header: {
+const styles = {
+  container: (c) => ({ flex: 1, backgroundColor: c.muted }),
+  header: (c) => ({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, backgroundColor: "#fff",
-    borderBottomWidth: 1, borderBottomColor: "#f0f0f0",
-  },
-  headerCenter: { flexDirection: "row", alignItems: "center", gap: 10 },
-  headerAvatar: { width: 32, height: 32, borderRadius: 16, marginRight: 6 },
-  userName: { fontSize: 16, fontWeight: "600", color: "#1a1a1a" },
-  taskTitle: { fontSize: 12, color: "#666" },
+    paddingHorizontal: Sizes.spacing.l, paddingTop: platformValues.statusBarHeight + Sizes.spacing.m,
+    paddingBottom: Sizes.spacing.s, backgroundColor: c.surface, borderBottomWidth: Sizes.borderWidth.thin, borderBottomColor: c.border,
+  }),
+  headerCenter: { flexDirection: "row", alignItems: "center" },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: Sizes.spacing.s },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: Sizes.spacing.s },
+  headerAvatar: { width: getSize(36, 44), height: getSize(36, 44), borderRadius: getSize(36, 44) / 2, marginRight: Sizes.spacing.s },
+  userName: { fontSize: getFontSize(16, 18), fontWeight: "700", maxWidth: getSize(160, 220) },
+  taskPill: { paddingHorizontal: Sizes.spacing.s, paddingVertical: Sizes.spacing.xs, borderRadius: Sizes.borderRadius.m, borderWidth: Sizes.borderWidth.thin },
+  taskTitle: { fontSize: getFontSize(12, 14) },
 
-  listContent: { padding: 12, gap: 8 },
+  listContent: { padding: Sizes.spacing.m, gap: Sizes.spacing.xs },
   row: { width: "100%", flexDirection: "row", alignItems: "flex-end" },
-  avatar: { width: 28, height: 28, borderRadius: 14, marginRight: 6 },
-  bubble: { maxWidth: "80%", paddingHorizontal: 12, paddingVertical: 8, borderRadius: bubbleRadius },
-  bubbleMe: { backgroundColor: "#10b981", borderBottomRightRadius: 4 },
-  bubbleOther: { backgroundColor: "#fff", borderBottomLeftRadius: 4, borderWidth: 1, borderColor: "#e6e6e6" },
-  text: { fontSize: 15, lineHeight: 20 },
+  avatar: { width: getSize(28, 32), height: getSize(28, 32), borderRadius: getSize(28, 32) / 2, marginRight: Sizes.spacing.xs },
+  bubble: { maxWidth: "78%", paddingHorizontal: Sizes.spacing.m, paddingVertical: Sizes.spacing.s, borderRadius: Sizes.borderRadius.l },
+  bubbleMe: { backgroundColor: "#10b981", borderBottomRightRadius: Sizes.borderRadius.s },
+  bubbleOther: { backgroundColor: "#fff", borderBottomLeftRadius: Sizes.borderRadius.s, borderWidth: Sizes.borderWidth.default, borderColor: "#ebebeb" },
+  text: { fontSize: getFontSize(15, 17), lineHeight: getSize(20, 22) },
   textMe: { color: "#fff" },
   textOther: { color: "#1a1a1a" },
-  time: { fontSize: 10, marginTop: 4 },
+  time: { fontSize: getFontSize(10, 11), marginTop: Sizes.spacing.xs },
   timeMe: { color: "#eafaf4", alignSelf: "flex-end" },
   timeOther: { color: "#999", alignSelf: "flex-end" },
 
-  inputBar: {
-    flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#fff",
-    borderTopWidth: 1, borderTopColor: "#f0f0f0",
-  },
-  iconBtn: { padding: 6 },
+  inputBar: (c) => ({
+    flexDirection: "row", alignItems: "center", paddingHorizontal: Sizes.spacing.m, paddingVertical: Sizes.spacing.s,
+    backgroundColor: c.surface, borderTopWidth: Sizes.borderWidth.thin, borderTopColor: c.border,
+  }),
+  iconBtn: { padding: Sizes.spacing.xs },
   textInput: {
-    flex: 1, maxHeight: 120, marginHorizontal: 8,
-    paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#f7f7f7",
-    borderRadius: 20, fontSize: 15,
+    flex: 1, maxHeight: getSize(120, 150), marginHorizontal: Sizes.spacing.s,
+    paddingHorizontal: Sizes.spacing.m, paddingVertical: Sizes.spacing.s, backgroundColor: "#f7f7f7", borderRadius: Sizes.borderRadius.l,
+    fontSize: getFontSize(15, 17), color: "#1a1a1a",
   },
-  sendBtn: { backgroundColor: "#10b981", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
-})
+  sendBtn: { backgroundColor: "#10b981", paddingHorizontal: Sizes.spacing.m, paddingVertical: Sizes.spacing.s, borderRadius: Sizes.borderRadius.m },
+}

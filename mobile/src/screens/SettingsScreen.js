@@ -3,39 +3,68 @@
 import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { Sizes, getFontSize, platformValues, getSize } from "../utils/dimensions"
+import { useThemeStore, useThemeColors } from "../store/themeStore"
 
 export default function SettingsScreen({ navigation }) {
+  const colors = useThemeColors()
+  const { mode, setMode } = useThemeStore()
   const [notif, setNotif] = useState(true)
   const [readReceipts, setReadReceipts] = useState(true)
 
+  const ThemeOption = ({ value, label, icon }) => (
+    <TouchableOpacity onPress={() => setMode(value)} style={[styles.rowLine(colors), mode === value && { backgroundColor: colors.muted }]}>
+      <View style={styles.rowLeft}>
+        <Ionicons name={icon} size={Sizes.icon.m} color={colors.primary} />
+        <Text style={[styles.rowText(colors), { marginLeft: Sizes.spacing.s }]}>{label}</Text>
+      </View>
+      <View style={[styles.radioDot(colors), mode === value && { borderColor: colors.primary, backgroundColor: colors.primarySoft }]} />
+    </TouchableOpacity>
+  )
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ayarlar</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Ayarlar</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Bildirimler</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Hesap</Text>
+        <View style={styles.rowLine(colors)}>
+          <Text style={styles.rowText(colors)}>Bildirimler</Text>
           <Switch value={notif} onValueChange={setNotif} />
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Okundu bilgiler</Text>
+        <View style={styles.rowLine(colors)}>
+          <Text style={styles.rowText(colors)}>Okundu bilgileri</Text>
           <Switch value={readReceipts} onValueChange={setReadReceipts} />
         </View>
 
-        <TouchableOpacity style={styles.item}>
-          <Ionicons name="shield-checkmark-outline" size={20} color="#10b981" />
-          <Text style={styles.itemText}>Güvenlik ve Gizlilik</Text>
+        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Görünüm</Text>
+        <ThemeOption value="system" label="Sistem Varsayılan" icon="phone-portrait-outline" />
+        <ThemeOption value="light" label="Açık Tema" icon="sunny-outline" />
+        <ThemeOption value="dark" label="Koyu Tema" icon="moon-outline" />
+
+        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Hukuk ve Gizlilik</Text>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("PrivacyPolicy")}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Gizlilik Politikası</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("Terms")}>
+          <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Kullanım Koşulları</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("KVKK")}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>KVKK Aydınlatma Metni</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.logout]}>
-          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-          <Text style={[styles.itemText, { color: "#ef4444" }]}>Çıkış Yap</Text>
+        <TouchableOpacity style={styles.logout(colors)}>
+          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Text style={[styles.itemText(colors), { color: colors.danger }]}>Çıkış Yap</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -43,16 +72,47 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1 },
   header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingTop: 50, paddingBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Sizes.spacing.l,
+    paddingTop: platformValues.statusBarHeight + Sizes.spacing.l,
+    paddingBottom: Sizes.spacing.m,
+    borderBottomWidth: Sizes.borderWidth.thin,
   },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#1a1a1a" },
-  content: { padding: 20, gap: 12 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 },
-  label: { fontSize: 16, color: "#1a1a1a", fontWeight: "500" },
-  item: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
-  itemText: { fontSize: 16, color: "#1a1a1a" },
-  logout: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 16, marginTop: 8, borderTopWidth: 1, borderTopColor: "#f1f1f1" },
+  headerTitle: { fontSize: getFontSize(18, 20), fontWeight: "bold" },
+  content: { padding: Sizes.spacing.l, gap: Sizes.spacing.s },
+  sectionTitle: { marginTop: Sizes.spacing.m, marginBottom: Sizes.spacing.xs, fontSize: getFontSize(14, 16), fontWeight: "600" },
+
+  rowLeft: { flexDirection: "row", alignItems: "center" },
+  rowLine: (c) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Sizes.spacing.m,
+    borderBottomWidth: Sizes.borderWidth.thin,
+    borderBottomColor: c.border,
+  }),
+  rowText: (c) => ({ fontSize: getFontSize(16, 18), color: c.text, fontWeight: "500" }),
+  radioDot: (c) => ({
+    width: getSize(18, 20),
+    height: getSize(18, 20),
+    borderRadius: 999,
+    borderWidth: Sizes.borderWidth.default,
+    borderColor: c.border,
+  }),
+
+  item: (c) => ({ flexDirection: "row", alignItems: "center", gap: Sizes.spacing.s, paddingVertical: Sizes.spacing.m }),
+  itemText: (c) => ({ fontSize: getFontSize(16, 18), color: c.text }),
+  logout: (c) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Sizes.spacing.s,
+    paddingVertical: Sizes.spacing.l,
+    marginTop: Sizes.spacing.s,
+    borderTopWidth: Sizes.borderWidth.thin,
+    borderTopColor: c.border,
+  }),
 })
