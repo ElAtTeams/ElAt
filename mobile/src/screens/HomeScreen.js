@@ -319,6 +319,8 @@ const styles = StyleSheet.create({
     paddingLeft: Sizes.spacing.l,
     marginBottom: Sizes.spacing.m,
     paddingVertical: Sizes.spacing.xs,
+    maxHeight:100,
+    minHeight:100
   },
   statCard: {
     backgroundColor: "#f8f9fa",

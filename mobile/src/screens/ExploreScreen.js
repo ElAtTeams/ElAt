@@ -64,20 +64,17 @@ export default function ExploreScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={20} color={colors.primary} />
-          <Text style={[styles.locationText, { color: colors.text }]}>{user?.locationName || "Keşfet"}</Text>
-        </View>
-        <TouchableOpacity style={styles.profileButton}>
-          <Ionicons name="person-circle-outline" size={28} color={colors.subtext} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Keşfet</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+          <Ionicons name="search-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.searchContainer, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+      <View style={[styles.searchContainer, { backgroundColor: colors.muted, borderColor: colors.border, borderWidth: 2, borderRadius: 16 }]}>
         <Ionicons name="search-outline" size={20} color={colors.subtext} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
@@ -158,17 +155,17 @@ export default function ExploreScreen({ navigation }) {
       {/* Filter Modal */}
       <Modal visible={filtersVisible} animationType="slide" transparent onRequestClose={() => setFiltersVisible(false)}>
         <View style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.surface, padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>Filtreler</Text>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}>Filtreler</Text>
               <TouchableOpacity onPress={() => setFiltersVisible(false)}>
                 <Ionicons name="close" size={22} color={colors.subtext} />
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
               <TextInput
-                style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
+                style={{ flex: 1, height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
                 placeholder="Min ₺"
                 placeholderTextColor={colors.subtext}
                 keyboardType="numeric"
@@ -176,7 +173,7 @@ export default function ExploreScreen({ navigation }) {
                 onChangeText={setMinPrice}
               />
               <TextInput
-                style={{ flex: 1, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
+                style={{ flex: 1, height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, color: colors.text, backgroundColor: colors.muted }}
                 placeholder="Maks ₺"
                 placeholderTextColor={colors.subtext}
                 keyboardType="numeric"
@@ -185,7 +182,7 @@ export default function ExploreScreen({ navigation }) {
               />
             </View>
 
-            <Text style={{ color: colors.subtext, marginBottom: 8 }}>Kategoriler</Text>
+            <Text style={{ color: colors.subtext, marginBottom: 12 }}>Kategoriler</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {categories.map((c) => {
                 const active = selectedCats.has(c.id)
@@ -228,6 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 16,
+    borderBottomWidth: 1,
   },
   backButton: { padding: 4, marginRight: 6 },
   locationContainer: {

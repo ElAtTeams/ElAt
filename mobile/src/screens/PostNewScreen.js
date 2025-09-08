@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Animated } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Modal } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
@@ -18,6 +18,9 @@ export default function PostNewScreen({ navigation }) {
   const [images, setImages] = useState([])
   const [urgent, setUrgent] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showTitleError, setShowTitleError] = useState(false)
+  const [showDescError, setShowDescError] = useState(false)
+  const [showCatError, setShowCatError] = useState(false)
 
   const colors = useThemeColors()
 
@@ -50,10 +53,11 @@ export default function PostNewScreen({ navigation }) {
   }
 
   const handleSubmit = async () => {
-    if (!title || !description || !category) {
-      Alert.alert("Hata", "Lütfen tüm zorunlu alanları doldurun")
-      return
-    }
+    let hasError = false
+    if (!title) { setShowTitleError(true); hasError = true }
+    if (!description) { setShowDescError(true); hasError = true }
+    if (!category) { setShowCatError(true); hasError = true }
+    if (hasError) return
 
     setLoading(true)
 
@@ -118,7 +122,13 @@ export default function PostNewScreen({ navigation }) {
             value={title}
             onChangeText={setTitle}
             maxLength={50}
+            onFocus={() => setShowTitleError(false)}
           />
+          {showTitleError && (
+            <Animated.Text style={[styles.errorText, { color: "#ef4444" }]}>
+              Başlık zorunlu!
+            </Animated.Text>
+          )}
           <Text style={[styles.charCount, { color: colors.subtext }]}>{title.length}/50</Text>
         </View>
 
@@ -134,7 +144,13 @@ export default function PostNewScreen({ navigation }) {
             multiline
             numberOfLines={4}
             maxLength={500}
+            onFocus={() => setShowDescError(false)}
           />
+          {showDescError && (
+            <Animated.Text style={[styles.errorText, { color: "#ef4444" }]}>
+              Açıklama zorunlu!
+            </Animated.Text>
+          )}
           <Text style={[styles.charCount, { color: colors.subtext }]}>{description.length}/500</Text>
         </View>
 
@@ -146,6 +162,11 @@ export default function PostNewScreen({ navigation }) {
               <CategoryButton key={item.id} item={item} />
             ))}
           </View>
+          {showCatError && (
+            <Animated.Text style={[styles.errorText, { color: "#ef4444" }]}>
+              Kategori seçmelisiniz!
+            </Animated.Text>
+          )}
         </View>
 
         {/* Price */}
@@ -515,5 +536,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    fontSize: 13,
+    marginTop: 4,
+    marginLeft: 2,
+    color: "#ef4444",
   },
 })

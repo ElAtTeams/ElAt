@@ -135,6 +135,9 @@ export default function PostDetailScreen({ navigation, route }) {
     );
   }
 
+  const userBadges = Array.isArray(task.user?.badges) ? task.user.badges : []
+  const joinDate = typeof task.user?.joinDate === "string" ? task.user.joinDate : ""
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -219,9 +222,9 @@ export default function PostDetailScreen({ navigation, route }) {
                     {task.user.rating} ({task.user.reviewCount} değerlendirme)
                   </Text>
                 </View>
-                <Text style={styles.joinDate}>{task.user.joinDate}</Text>
+                {!!joinDate && <Text style={styles.joinDate}>{joinDate}</Text>}
                 <View style={styles.badges}>
-                  {task.user.badges.map((badge, index) => (
+                  {userBadges.map((badge, index) => (
                     <View key={index} style={styles.badge}>
                       <Text style={styles.badgeText}>{badge}</Text>
                     </View>

@@ -12,12 +12,24 @@ export default function ProfileEditScreen({ navigation }) {
   const [name, setName] = useState(user?.name || "")
   const [location, setLocation] = useState(user?.location || "")
   const [bio, setBio] = useState(user?.bio || "")
+  const [loading, setLoading] = useState(false)
 
   const colors = useThemeColors()
 
   const save = () => {
-    // API çağrısı yerine demo
-    Alert.alert("Kaydedildi", "Profiliniz güncellendi.", [{ text: "Tamam", onPress: () => navigation.goBack() }])
+    let hasError = false
+    if (!name.trim()) { setNameError(true); hasError = true }
+    if (!location.trim()) { setLocationError(true); hasError = true }
+    if (hasError) return
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      Alert.alert("Kaydedildi", "Profiliniz güncellendi.", [{ text: "Tamam", onPress: () => navigation.goBack() }])
+    }, 1000)
+  }
+
+  const pickImage = () => {
+    Alert.alert("Fotoğraf", "Fotoğraf değiştirme özelliği backend ile eklenecek.")
   }
 
   return (
@@ -36,7 +48,7 @@ export default function ProfileEditScreen({ navigation }) {
             source={{ uri: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200" }}
             style={styles.avatar}
           />
-          <TouchableOpacity style={styles.avatarBtn}>
+          <TouchableOpacity style={styles.avatarBtn} onPress={pickImage}>
             <Ionicons name="camera-outline" size={Sizes.icon.m} color="#10b981" />
             <Text style={styles.avatarBtnText}>Fotoğrafı Değiştir</Text>
           </TouchableOpacity>
@@ -57,8 +69,11 @@ export default function ProfileEditScreen({ navigation }) {
           placeholder="Kısaca kendinizden bahsedin"
         />
 
-        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={save}>
-          <Text style={styles.saveText}>Kaydet</Text>
+        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={save} disabled={loading}>
+          {loading
+            ? <Ionicons name="reload" size={22} color="#fff" style={{ transform: [{ rotate: "90deg" }] }} />
+            : <Text style={styles.saveText}>Kaydet</Text>
+          }
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -66,7 +81,7 @@ export default function ProfileEditScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -74,31 +89,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: Sizes.spacing.l,
     paddingTop: platformValues.statusBarHeight + Sizes.spacing.l,
     paddingBottom: Sizes.spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e1e1e1",
   },
-  headerTitle: { fontSize: getFontSize(18, 20), fontWeight: "bold", color: "#1a1a1a" },
-  content: { padding: Sizes.spacing.l, gap: Sizes.spacing.s },
-  avatarWrap: { alignItems: "center", marginBottom: Sizes.spacing.m },
-  avatar: { width: getSize(100, 120), height: getSize(100, 120), borderRadius: getSize(100, 120) / 2, marginBottom: Sizes.spacing.s },
-  avatarBtn: { flexDirection: "row", alignItems: "center", gap: Sizes.spacing.xs },
-  avatarBtnText: { color: "#10b981", fontWeight: "600" },
-  label: { fontSize: getFontSize(14, 16), color: "#666" },
+  headerTitle: { fontSize: getFontSize(20, 22), fontWeight: "bold" },
+  content: { padding: Sizes.spacing.l, gap: Sizes.spacing.l },
+  avatarWrap: { alignItems: "center", marginBottom: Sizes.spacing.l },
+  avatar: { width: getSize(120, 140), height: getSize(120, 140), borderRadius: getSize(120, 140) / 2, marginBottom: Sizes.spacing.s, borderWidth: 3, borderColor: "#10b981" },
+  avatarBtn: { flexDirection: "row", alignItems: "center", gap: Sizes.spacing.xs, marginTop: 8 },
+  avatarBtnText: { color: "#10b981", fontWeight: "700", fontSize: 15 },
+  label: { fontSize: getFontSize(15, 17), color: "#666", marginBottom: 6, fontWeight: "600" },
   input: {
     height: Sizes.input.height,
     borderRadius: Sizes.borderRadius.l,
-    borderWidth: Sizes.borderWidth.default,
+    borderWidth: 1.5,
     borderColor: "#e1e1e1",
     paddingHorizontal: Sizes.input.paddingH,
-    backgroundColor: "#fafafa",
+    backgroundColor: "#f8f9fa",
     fontSize: getFontSize(16, 18),
     color: "#1a1a1a",
+    marginBottom: 10,
   },
   saveBtn: {
-    marginTop: Sizes.spacing.s,
+    marginTop: Sizes.spacing.l,
     backgroundColor: "#10b981",
     height: Sizes.button.height,
     borderRadius: Sizes.borderRadius.l,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
-  saveText: { color: "#fff", fontSize: getFontSize(16, 18), fontWeight: "600" },
+  saveText: { color: "#fff", fontSize: getFontSize(17, 19), fontWeight: "700" },
 })

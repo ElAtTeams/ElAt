@@ -32,6 +32,8 @@ import TermsScreen from "./src/screens/legal/TermsScreen"
 import KvkkScreen from "./src/screens/legal/KvkkScreen"
 import NotificationSettingsScreen from "./src/screens/settings/NotificationSettingsScreen"
 import SupportScreen from "./src/screens/settings/SupportScreen"
+import HelpScreen from "./src/screens/HelpScreen"
+import FeedbackScreen from "./src/screens/FeedbackScreen"
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
@@ -132,6 +134,8 @@ function MainStack() {
       <Stack.Screen name="KVKK" component={KvkkScreen} options={{ headerShown: false }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Help" component={HelpScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   )
 }

@@ -5,5 +5,8 @@
  * @format
  */
 
-// Expo için sade metro.config.js
-module.exports = {};
+const { getDefaultConfig } = require("@expo/metro-config");
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = config;
