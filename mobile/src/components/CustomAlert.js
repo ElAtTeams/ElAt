@@ -1,79 +1,147 @@
 "use client"
 import React, { useEffect, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Modal } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useThemeColors } from "../store/themeStore"
 
 const { width, height } = Dimensions.get("window")
 
-export default function CustomAlert({ visible, type = "info", title, message, onClose }) {
+export default function CustomAlert({ visible, type = "info", title, message, onClose, onCancel, showCancel = false }) {
   const colors = useThemeColors()
-  const anim = useRef(new Animated.Value(0)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.3)).current
 
   useEffect(() => {
     if (visible) {
-      Animated.spring(anim, { toValue: 1, useNativeDriver: true }) .start()
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true })
+      ]).start()
     } else {
-      Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: true }).start()
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 0.3, duration: 200, useNativeDriver: true })
+      ]).start()
     }
   }, [visible])
 
-  if (!visible) return null
-
-  const icons = {
-    info: "information-circle-outline",
-    success: "checkmark-circle-outline",
-    error: "close-circle-outline",
-    warning: "alert-circle-outline",
+  const getIcon = () => {
+    switch (type) {
+      case "success": return { name: "checkmark-circle", color: "#22c55e" }
+      case "error": return { name: "close-circle", color: "#ef4444" }
+      case "warning": return { name: "warning", color: "#f59e0b" }
+      default: return { name: "information-circle", color: colors.primary }
+    }
   }
-  const iconColor = {
-    info: colors.primary,
-    success: "#10b981",
-    error: "#ef4444",
-    warning: "#f59e42",
-  }[type] || colors.primary
+
+  const icon = getIcon()
 
   return (
-    <View style={styles.overlay}>
-      <Animated.View
-        style={[
-          styles.modal,
-          {
-            backgroundColor: colors.surface,
-            transform: [
-              { scale: anim },
-              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [height * 0.2, 0] }) },
-            ],
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowRadius: 16,
-            elevation: 8,
-          },
-        ]}
-      >
-        <Ionicons name={icons[type]} size={54} color={iconColor} style={{ marginBottom: 12 }} />
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.message, { color: colors.subtext }]}>{message}</Text>
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={onClose}>
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Tamam</Text>
-        </TouchableOpacity>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Animated.View style={[
+          styles.container, 
+          { backgroundColor: colors.surface, transform: [{ scale: scaleAnim }] }
+        ]}>
+          <View style={[styles.iconContainer, { backgroundColor: icon.color + "15" }]}>
+            <Ionicons name={icon.name} size={48} color={icon.color} />
+          </View>
+          
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.message, { color: colors.subtext }]}>{message}</Text>
+          
+          <View style={styles.buttonContainer}>
+            {showCancel && (
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton, { borderColor: colors.border }]} 
+                onPress={onCancel || onClose}
+              >
+                <Text style={[styles.cancelText, { color: colors.subtext }]}>İptal</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity 
+              style={[styles.button, styles.confirmButton, { backgroundColor: icon.color }]} 
+              onPress={onClose}
+            >
+              <Text style={styles.confirmText}>
+                {type === "warning" ? "Evet" : "Tamam"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </Animated.View>
-    </View>
+    </Modal>
   )
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: "absolute", left: 0, top: 0, width, height,
-    backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", zIndex: 99,
-  },
-  modal: {
-    width: width * 0.8,
-    borderRadius: 24,
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
     alignItems: "center",
-    padding: 28,
   },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 8, textAlign: "center" },
-  message: { fontSize: 16, marginBottom: 24, textAlign: "center" },
-  button: { paddingHorizontal: 32, paddingVertical: 12, borderRadius: 12 },
+  container: {
+    width: width * 0.85,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  button: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelButton: {
+    borderWidth: 1.5,
+    backgroundColor: "transparent",
+  },
+  confirmButton: {
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cancelText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  confirmText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+  },
 })

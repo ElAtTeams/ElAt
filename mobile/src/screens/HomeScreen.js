@@ -380,7 +380,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
+  mapMainContainer: {
+    flex: 1,
+    marginHorizontal: Sizes.spacing.l,
+    marginBottom: Sizes.spacing.l,
+  },
+  mapOverlayList: {
+    marginTop: Sizes.spacing.s,
+    borderRadius: Sizes.borderRadius.l,
+    maxHeight: Sizes.screenHeight * 0.3,
+    borderWidth: Sizes.borderWidth.default,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  overlayHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Sizes.spacing.m,
+    paddingVertical: Sizes.spacing.s,
+    borderBottomWidth: Sizes.borderWidth.thin,
+  },
+  overlayTitle: {
+    fontSize: getFontSize(16, 18),
+    fontWeight: "bold",
+  },
+  overlayCount: {
+    fontSize: getFontSize(12, 14),
+    fontWeight: "500",
+  },
+  overlayScrollView: {
+    paddingHorizontal: Sizes.spacing.m,
+  },
   tasksList: {
     paddingHorizontal: Sizes.spacing.l,
     paddingBottom: getSize(80, 100),

@@ -1,26 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { Sizes, getFontSize, platformValues, getSize } from "../utils/dimensions"
 import { useThemeStore, useThemeColors } from "../store/themeStore"
+import CustomAlert from "../components/CustomAlert"
+import { CommonActions } from "@react-navigation/native"
+import { useAppStore } from "../store/useAppStore"
 
 export default function SettingsScreen({ navigation }) {
   const colors = useThemeColors()
-  const { mode, setMode } = useThemeStore()
-  const [notif, setNotif] = useState(true)
-  const [readReceipts, setReadReceipts] = useState(true)
+  const themeStore = useThemeStore()
+  const currentTheme = themeStore?.theme ?? "system"
+  const setTheme = themeStore?.setTheme ?? (() => {})
 
-  const ThemeOption = ({ value, label, icon }) => (
-    <TouchableOpacity onPress={() => setMode(value)} style={[styles.rowLine(colors), mode === value && { backgroundColor: colors.muted }]}>
-      <View style={styles.rowLeft}>
-        <Ionicons name={icon} size={Sizes.icon.m} color={colors.primary} />
-        <Text style={[styles.rowText(colors), { marginLeft: Sizes.spacing.s }]}>{label}</Text>
-      </View>
-      <View style={[styles.radioDot(colors), mode === value && { borderColor: colors.primary, backgroundColor: colors.primarySoft }]} />
-    </TouchableOpacity>
-  )
+  const [readReceipts, setReadReceipts] = useState(true)
+  const [showLogout, setShowLogout] = useState(false)
+  const logout = useAppStore((s) => s.logout ?? (() => {}))
+
+  const handleLogout = () => {
+    setShowLogout(false)
+    logout() // store güncellenecek, AppNavigator otomatik olarak auth stack'e dönecek
+    // NOT: navigation.reset(...) kaldırıldı çünkü o anda Welcome route'u mevcut olmayabilir
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -38,15 +41,16 @@ export default function SettingsScreen({ navigation }) {
           <Ionicons name="notifications-outline" size={20} color={colors.primary} />
           <Text style={styles.itemText(colors)}>Bildirim Ayarları</Text>
         </TouchableOpacity>
+
         <View style={styles.rowLine(colors)}>
           <Text style={styles.rowText(colors)}>Okundu bilgileri</Text>
           <Switch value={readReceipts} onValueChange={setReadReceipts} />
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Görünüm</Text>
-        <ThemeOption value="system" label="Sistem Varsayılan" icon="phone-portrait-outline" />
-        <ThemeOption value="light" label="Açık Tema" icon="sunny-outline" />
-        <ThemeOption value="dark" label="Koyu Tema" icon="moon-outline" />
+        <ThemeOption value="system" label="Sistem Varsayılan" icon="phone-portrait-outline" current={currentTheme} setTheme={setTheme} colors={colors} />
+        <ThemeOption value="light" label="Açık Tema" icon="sunny-outline" current={currentTheme} setTheme={setTheme} colors={colors} />
+        <ThemeOption value="dark" label="Koyu Tema" icon="moon-outline" current={currentTheme} setTheme={setTheme} colors={colors} />
 
         <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Hukuk ve Gizlilik</Text>
         <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("PrivacyPolicy")}>
@@ -62,18 +66,66 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.itemText(colors)}>KVKK Aydınlatma Metni</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Diğer</Text>
+        <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Destek</Text>
         <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("Support")}>
           <Ionicons name="heart-outline" size={20} color={colors.primary} />
           <Text style={styles.itemText(colors)}>Destek Ol</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("Help")}>
+          <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Yardım & SSS</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("Feedback")}>
+          <Ionicons name="chatbox-ellipses-outline" size={20} color={colors.primary} />
+          <Text style={styles.itemText(colors)}>Geri Bildirim</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item(colors)} onPress={() => navigation.navigate("ReportIssue")}>
+          <Ionicons name="warning-outline" size={20} color="#f59e0b" />
+          <Text style={styles.itemText(colors)}>Sorun Bildir</Text>
+        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logout(colors)}>
+        <TouchableOpacity style={styles.logout(colors)} onPress={() => setShowLogout(true)}>
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
           <Text style={[styles.itemText(colors), { color: colors.danger }]}>Çıkış Yap</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <CustomAlert
+        visible={showLogout}
+        type="warning"
+        title="Çıkış Yap"
+        message="Hesabınızdan çıkmak istediğinize emin misiniz?"
+        onClose={handleLogout}
+        onCancel={() => setShowLogout(false)}
+        showCancel={true}
+      />
     </View>
+  )
+}
+
+/* Basit ThemeOption bileşeni - eksikse hata vermez */
+function ThemeOption({ value, label, icon, current, setTheme, colors }) {
+  const selected = current === value
+  return (
+    <TouchableOpacity
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: Sizes.spacing.m,
+        borderBottomWidth: Sizes.borderWidth.thin,
+        borderBottomColor: colors.border,
+      }}
+      onPress={() => setTheme(value)}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: Sizes.spacing.s }}>
+        <Ionicons name={icon} size={20} color={colors.primary} />
+        <Text style={{ fontSize: getFontSize(16, 18), color: colors.text }}>{label}</Text>
+      </View>
+      <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}>
+        {selected ? <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary }} /> : null}
+      </View>
+    </TouchableOpacity>
   )
 }
 

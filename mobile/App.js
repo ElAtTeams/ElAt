@@ -34,45 +34,12 @@ import NotificationSettingsScreen from "./src/screens/settings/NotificationSetti
 import SupportScreen from "./src/screens/settings/SupportScreen"
 import HelpScreen from "./src/screens/HelpScreen"
 import FeedbackScreen from "./src/screens/FeedbackScreen"
+import ReportIssueScreen from "./src/screens/ReportIssueScreen"
+import SuccessScreen from "./src/screens/SuccessScreen"
+import OnboardingScreen from "./src/screens/onboarding/OnboardingScreen"
 
 const Stack = createStackNavigator()
 const Tab = createBottomTabNavigator()
-
-function AuthStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-    </Stack.Navigator>
-  )
-}
-
-function AppNavigator() {
-  const isLoggedIn = useAppStore((s) => s.isLoggedIn)
-  const { colors: ui, isDark } = useThemeMeta()
-
-  const navTheme = {
-    dark: isDark,
-    colors: {
-      primary: ui.primary,
-      background: ui.background,
-      card: ui.surface,
-      text: ui.text,
-      border: ui.border,
-      notification: ui.primary,
-    },
-  }
-
-  return (
-    <NavigationContainer theme={navTheme}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={ui.background} />
-      {isLoggedIn ? <MainStack /> : <AuthStack />}
-    </NavigationContainer>
-  )
-}
 
 function MainTabs() {
   const { colors: ui } = useThemeMeta()
@@ -112,31 +79,68 @@ function MainTabs() {
       <Tab.Screen name="PostNew" component={PostNewScreen} options={{ title: "", tabBarLabel: () => null }} />
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Mesajlar" }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profil" }} />
-
     </Tab.Navigator>
   )
 }
 
-function MainStack() {
+function AppNavigator() {
+  const { isLoggedIn, needsOnboarding } = useAppStore()
+  const { colors: ui, isDark } = useThemeMeta()
+
+  const navTheme = {
+    dark: isDark,
+    colors: {
+      primary: ui.primary,
+      background: ui.background,
+      card: ui.surface,
+      text: ui.text,
+      border: ui.border,
+      notification: ui.primary,
+    },
+  }
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
-      {/* Özel header kullanan yeni ekranlar */}
-      <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ExploreAll" component={ExploreAllScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Terms" component={TermsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="KVKK" component={KvkkScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Help" component={HelpScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: false }} />
-    </Stack.Navigator>
+    <NavigationContainer theme={navTheme}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={ui.background} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isLoggedIn ? (
+          // Auth Stack
+          <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          </>
+        ) : needsOnboarding ? (
+          // Onboarding Stack
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
+          </>
+        ) : (
+          // Main App Stack
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="ExploreAll" component={ExploreAllScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen name="Terms" component={TermsScreen} />
+            <Stack.Screen name="KVKK" component={KvkkScreen} />
+            <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+            <Stack.Screen name="Support" component={SupportScreen} />
+            <Stack.Screen name="Help" component={HelpScreen} />
+            <Stack.Screen name="Feedback" component={FeedbackScreen} />
+            <Stack.Screen name="ReportIssue" component={ReportIssueScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   )
 }
 
