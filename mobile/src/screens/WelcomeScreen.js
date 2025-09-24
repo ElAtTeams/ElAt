@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'react-native';
+import { Sizes, getFontSize, getSize } from '../utils/dimensions';
 
 const { width } = Dimensions.get('window');
 
@@ -92,17 +93,19 @@ export default function WelcomeScreen({ navigation }) {
         <Animated.View
           style={[
             styles.slideContent,
-            {
-              opacity,
-              transform: [
-                { translateX },
-                { scale },
-              ],
-            },
+            { opacity, transform: [{ translateX }, { scale }] },
           ]}
         >
           <View style={styles.iconContainer}>
-            <Image source={item.image} style={{ width: 120, height: 120, borderRadius: 60 }} resizeMode="cover" />
+            <Image
+              source={item.image}
+              style={{
+                width: getSize(120, 150),
+                height: getSize(120, 150),
+                borderRadius: getSize(60, 75),
+              }}
+              resizeMode="cover"
+            />
           </View>
           <Text style={styles.slideTitle}>{item.title}</Text>
           <Text style={styles.slideDescription}>{item.description}</Text>
@@ -207,115 +210,26 @@ export default function WelcomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 24,
-    color: '#10b981',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
-    marginBottom: 40,
-  },
-  slideContainer: {
-    width: width,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  slideContent: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: { alignItems: 'center', paddingHorizontal: Sizes.spacing.l, paddingTop: Sizes.spacing.l },
+  logo: { fontSize: getFontSize(32, 38), fontWeight: 'bold', color: '#1a1a1a', marginBottom: Sizes.spacing.l },
+  welcomeText: { fontSize: getFontSize(24, 28), color: '#10b981', marginBottom: Sizes.spacing.s },
+  subtitle: { fontSize: getFontSize(16, 18), textAlign: 'center', color: '#666', marginBottom: Sizes.spacing.xl },
+  slideContainer: { width, alignItems: 'center', paddingHorizontal: Sizes.spacing.l },
+  slideContent: { alignItems: 'center', paddingVertical: Sizes.spacing.l },
   iconContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#f0fdf4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    width: getSize(160, 200), height: getSize(160, 200), borderRadius: 999,
+    backgroundColor: '#f0fdf4', justifyContent: 'center', alignItems: 'center',
+    marginBottom: Sizes.spacing.xl, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
   },
-  slideTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  slideDescription: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
-  },
-  paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10b981',
-    marginHorizontal: 4,
-  },
-  buttons: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    gap: 12,
-  },
-  registerButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 12,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  registerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loginButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#10b981',
-  },
-  loginButtonText: {
-    color: '#10b981',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-}); 
+  slideTitle: { fontSize: getFontSize(24, 28), fontWeight: 'bold', color: '#1a1a1a', marginBottom: Sizes.spacing.m, textAlign: 'center' },
+  slideDescription: { fontSize: getFontSize(16, 18), color: '#666', textAlign: 'center', lineHeight: getSize(24, 28), paddingHorizontal: Sizes.spacing.l },
+  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Sizes.spacing.xl, marginBottom: Sizes.spacing.xl },
+  dot: { width: getSize(8, 10), height: getSize(8, 10), borderRadius: getSize(4, 5), backgroundColor: '#10b981', marginHorizontal: Sizes.spacing.xs },
+  buttons: { paddingHorizontal: Sizes.spacing.l, paddingBottom: Sizes.spacing.l, gap: Sizes.spacing.s },
+  registerButton: { backgroundColor: '#10b981', borderRadius: 12, height: Sizes.button.height, justifyContent: 'center', alignItems: 'center' },
+  registerButtonText: { color: '#fff', fontSize: getFontSize(16, 18), fontWeight: '600' },
+  loginButton: { backgroundColor: '#fff', borderRadius: 12, height: Sizes.button.height, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#10b981' },
+  loginButtonText: { color: '#10b981', fontSize: getFontSize(16, 18), fontWeight: '600' },
+});

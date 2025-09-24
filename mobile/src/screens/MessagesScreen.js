@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react"
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useThemeColors } from "../store/themeStore"
 
 export default function MessagesScreen({ navigation }) {
   const [conversations, setConversations] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
+  const colors = useThemeColors()
 
   useEffect(() => {
     loadConversations()
@@ -95,7 +97,7 @@ export default function MessagesScreen({ navigation }) {
 
   const renderConversation = ({ item }) => (
     <TouchableOpacity
-      style={styles.conversationCard}
+      style={[styles.conversationCard, { borderBottomColor: colors.border }]}
       onPress={() =>
         navigation.navigate("Chat", {
           chatId: item.id,
@@ -108,19 +110,26 @@ export default function MessagesScreen({ navigation }) {
     >
       <View style={styles.avatarContainer}>
         <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-        {item.user.online && <View style={styles.onlineIndicator} />}
+        {item.user.online && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
         {item.lastMessage.unread && <View style={styles.unreadBadge} />}
       </View>
 
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.userName}>{item.user.name}</Text>
-          <Text style={styles.messageTime}>{item.lastMessage.time}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.user.name}</Text>
+          <Text style={[styles.messageTime, { color: colors.subtext }]}>{item.lastMessage.time}</Text>
         </View>
 
-        <Text style={styles.taskTitle}>📋 {item.task.title}</Text>
+        <Text style={[styles.taskTitle, { color: colors.primary }]}>📋 {item.task.title}</Text>
 
-        <Text style={[styles.lastMessage, item.lastMessage.unread && styles.unreadMessage]}>
+        <Text
+          style={[
+            styles.lastMessage,
+            { color: item.lastMessage.unread ? colors.text : colors.subtext },
+            item.lastMessage.unread && styles.unreadMessage,
+          ]}
+          numberOfLines={2}
+        >
           {item.lastMessage.sender === "me" ? "Sen: " : ""}
           {item.lastMessage.text}
         </Text>
@@ -129,24 +138,25 @@ export default function MessagesScreen({ navigation }) {
   )
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mesajlar</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Mesajlar</Text>
         <TouchableOpacity>
-          <Ionicons name="create-outline" size={24} color="#666" />
+          <Ionicons name="create-outline" size={24} color={colors.subtext} />
         </TouchableOpacity>
       </View>
 
       {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+        <Ionicons name="search-outline" size={20} color={colors.subtext} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Kişi ara..."
+          placeholderTextColor={colors.subtext}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />

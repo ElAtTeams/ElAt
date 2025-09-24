@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../contexts/AuthContext"
+import { useThemeColors } from "../store/themeStore"
 
 const { width } = Dimensions.get("window")
 
@@ -13,6 +14,7 @@ export default function ProfileScreen({ navigation, route }) {
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState({})
   const [activeTab, setActiveTab] = useState("posts") // "posts", "reviews", "badges"
+  const [avatarError, setAvatarError] = useState(false)
 
   const isOwnProfile = !userId || userId === currentUser?.id
 
@@ -22,11 +24,10 @@ export default function ProfileScreen({ navigation, route }) {
   }, [userId])
 
   const loadUserProfile = () => {
-    // API call to load user profile
     setUser({
       id: userId || currentUser?.id,
-      name: isOwnProfile ? currentUser?.name : "Mehmet Aydın",
-      avatar: isOwnProfile ? currentUser?.avatar : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
+      name: isOwnProfile ? (currentUser?.name || "Komşu") : "Mehmet Aydın",
+      avatar: (isOwnProfile ? currentUser?.avatar : null) || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
       bio: "Mahallemizde yardımlaşmayı seven, güvenilir bir komşu. Her zaman elimden geldiğince yardım etmeye hazırım.",
       location: "Kadıköy, İstanbul",
       joinDate: "Ocak 2023",
@@ -99,7 +100,7 @@ export default function ProfileScreen({ navigation, route }) {
         <TouchableOpacity
           key={post.id}
           style={styles.postCard}
-          onPress={() => navigation.navigate("PostDetail", { task: post })}
+          onPress={() => navigation.navigate("PostDetail", { taskId: post.id })} // task yerine id gönder
         >
           <Image source={{ uri: post.image }} style={styles.postImage} />
           <View style={styles.postInfo}>
@@ -153,61 +154,77 @@ export default function ProfileScreen({ navigation, route }) {
     </View>
   )
 
+  const colors = useThemeColors()
+
   if (!user) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Yükleniyor...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>Yükleniyor...</Text>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profil</Text>
-        {isOwnProfile && (
-          <TouchableOpacity onPress={() => navigation.navigate("ProfileEdit")}>
-            <Ionicons name="create-outline" size={24} color="#666" />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profil</Text>
+        <View style={styles.headerRight}>
+          {isOwnProfile && (
+            <TouchableOpacity onPress={() => navigation.navigate("ProfileEdit")} style={styles.headerIcon}>
+              <Ionicons name="create-outline" size={24} color={colors.subtext} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => navigation.navigate("Settings")} style={styles.headerIcon}>
+            <Ionicons name="settings-outline" size={24} color={colors.subtext} />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
         <View style={styles.profileSection}>
-          <Image source={{ uri: user.avatar }} style={styles.profileAvatar} />
-          <Text style={styles.profileName}>{user.name}</Text>
-          <Text style={styles.profileLocation}>📍 {user.location}</Text>
-          <Text style={styles.profileBio}>{user.bio}</Text>
+          {(!avatarError && user?.avatar) ? (
+            <Image source={{ uri: user.avatar }} style={styles.profileAvatar} onError={() => setAvatarError(true)} />
+          ) : (
+            <Ionicons name="person-circle-outline" size={96} color={colors.subtext} />
+          )}
+          <Text style={[styles.profileName, { color: colors.text }]}>{user.name}</Text>
+          <Text style={[styles.profileLocation, { color: colors.subtext }]}>📍 {user.location}</Text>
+          <Text style={[styles.profileBio, { color: colors.subtext }]}>{user.bio}</Text>
 
           <View style={styles.profileStats}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.rating}</Text>
-              <Text style={styles.statLabel}>Puan</Text>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{user.rating}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Puan</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.reviewCount}</Text>
-              <Text style={styles.statLabel}>Değerlendirme</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{user.reviewCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Değerlendirme</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.completedTasks}</Text>
-              <Text style={styles.statLabel}>Tamamlanan</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{stats.completedTasks}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Tamamlanan</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.helpedPeople}</Text>
-              <Text style={styles.statLabel}>Yardım Edilen</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{stats.helpedPeople}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Yardım Edilen</Text>
             </View>
           </View>
 
           {!isOwnProfile && (
             <View style={styles.profileActions}>
-              <TouchableOpacity style={styles.messageButton}>
-                <Ionicons name="chatbubble-outline" size={20} color="#10b981" />
-                <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+              <TouchableOpacity
+                style={[styles.messageButton, { borderColor: colors.primary, backgroundColor: colors.surface }]}
+                onPress={() =>
+                  navigation.navigate("Chat", { userName: user.name, userAvatar: user.avatar, taskTitle: undefined })
+                }
+              >
+                <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+                <Text style={[styles.messageButtonText, { color: colors.primary }]}>Mesaj Gönder</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -216,26 +233,26 @@ export default function ProfileScreen({ navigation, route }) {
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "posts" && styles.activeTab]}
+            style={[styles.tab, activeTab === "posts" && { borderBottomColor: colors.primary }]}
             onPress={() => setActiveTab("posts")}
           >
-            <Text style={[styles.tabText, activeTab === "posts" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === "posts" ? colors.primary : colors.subtext }]}>
               İlanlar ({user.posts.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "reviews" && styles.activeTab]}
+            style={[styles.tab, activeTab === "reviews" && { borderBottomColor: colors.primary }]}
             onPress={() => setActiveTab("reviews")}
           >
-            <Text style={[styles.tabText, activeTab === "reviews" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === "reviews" ? colors.primary : colors.subtext }]}>
               Değerlendirmeler ({user.reviews.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "badges" && styles.activeTab]}
+            style={[styles.tab, activeTab === "badges" && { borderBottomColor: colors.primary }]}
             onPress={() => setActiveTab("badges")}
           >
-            <Text style={[styles.tabText, activeTab === "badges" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: activeTab === "badges" ? colors.primary : colors.subtext }]}>
               Rozetler ({user.badges.length})
             </Text>
           </TouchableOpacity>
@@ -243,9 +260,79 @@ export default function ProfileScreen({ navigation, route }) {
 
         {/* Tab Content */}
         <View style={styles.tabContent}>
-          {activeTab === "posts" && renderPosts()}
-          {activeTab === "reviews" && renderReviews()}
-          {activeTab === "badges" && renderBadges()}
+          {activeTab === "posts" && (
+            <View style={styles.postsGrid}>
+              {user.posts.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={[styles.postCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                  onPress={() => navigation.navigate("PostDetail", { taskId: post.id })}
+                >
+                  <Image source={{ uri: post.image }} style={styles.postImage} />
+                  <View style={styles.postInfo}>
+                    <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
+                    <Text style={[styles.postPrice, { color: colors.primary }]}>{post.price}</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        post.status === "active" ? styles.activeBadge : styles.completedBadge,
+                      ]}
+                    >
+                      <Text style={[styles.statusText, { color: "#fff" }]}>
+                        {post.status === "active" ? "Aktif" : "Tamamlandı"}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {activeTab === "reviews" && (
+            <View style={styles.reviewsList}>
+              {user.reviews.map((review) => (
+                <View
+                  key={review.id}
+                  style={[styles.reviewCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                >
+                  <View style={styles.reviewHeader}>
+                    <Image source={{ uri: review.reviewer.avatar }} style={styles.reviewerAvatar} />
+                    <View style={styles.reviewerInfo}>
+                      <Text style={[styles.reviewerName, { color: colors.text }]}>{review.reviewer.name}</Text>
+                      <View style={styles.reviewRating}>
+                        {[...Array(5)].map((_, i) => (
+                          <Ionicons
+                            key={i}
+                            name="star"
+                            size={12}
+                            color={i < review.rating ? "#fbbf24" : colors.border}
+                          />
+                        ))}
+                      </View>
+                      <Text style={[styles.reviewDate, { color: colors.subtext }]}>
+                        {review.date} • {review.task}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.reviewComment, { color: colors.subtext }]}>{review.comment}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {activeTab === "badges" && (
+            <View style={styles.badgesGrid}>
+              {user.badges.map((badge) => (
+                <View
+                  key={badge.id}
+                  style={[styles.badgeCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                >
+                  <View style={[styles.badgeIcon, { backgroundColor: badge.color + "20" }]}>
+                    <Ionicons name={badge.icon} size={24} color={badge.color} />
+                  </View>
+                  <Text style={[styles.badgeName, { color: colors.text }]}>{badge.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -275,6 +362,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#1a1a1a",
   },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  headerIcon: { marginLeft: 12 },
   content: {
     flex: 1,
   },
