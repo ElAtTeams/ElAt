@@ -1,7 +1,7 @@
-const express = require('express');
-const cors = require('cors');
-const sequelize = require('./config/database');
-const authRouter = require('./routes/auth');
+import express from 'express';
+import cors from 'cors';
+import sequelize from './config/database';
+import authRouter from './routes/auth';
 
 const app = express();
 app.use(cors());

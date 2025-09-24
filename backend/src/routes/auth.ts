@@ -1,11 +1,11 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const router = express.Router();
+import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User';
 
-// Register
-router.post('/register', async (req, res) => {
+const router = Router();
+
+router.post('/register', async (req: Request, res: Response) => {
   const { firstName, lastName, email, password } = req.body;
   if (!firstName || !lastName || !email || !password) {
     return res.status(400).json({ error: 'Tüm alanlar zorunlu.' });
@@ -21,8 +21,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'E-posta ve şifre zorunlu.' });
@@ -39,4 +38,4 @@ router.post('/login', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
