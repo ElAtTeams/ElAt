@@ -7,9 +7,16 @@ interface UserAttributes {
   lastName: string;
   email: string;
   password: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  bio?: string;
+  interests?: string;
+  isOnboardingComplete?: boolean;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'phone' | 'address' | 'city' | 'district' | 'bio' | 'interests' | 'isOnboardingComplete'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
@@ -17,6 +24,13 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public lastName!: string;
   public email!: string;
   public password!: string;
+  public phone?: string;
+  public address?: string;
+  public city?: string;
+  public district?: string;
+  public bio?: string;
+  public interests?: string;
+  public isOnboardingComplete?: boolean;
 }
 
 User.init(
@@ -43,11 +57,47 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    district: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
+    },
+    interests: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    isOnboardingComplete: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
   },
   {
     sequelize,
     modelName: 'User',
     timestamps: true,
+    tableName: 'Users', // Tablonun tam adını belirtelim
   }
 );
 

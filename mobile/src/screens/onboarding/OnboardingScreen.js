@@ -1,11 +1,25 @@
-import React, { useState, useRef, useEffect } from "react"
-import { SafeAreaView, View, Text, TouchableOpacity, TextInput, StyleSheet, Animated, Image, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useThemeColors } from "../../store/themeStore"
-import { Sizes, getFontSize, platformValues } from "../../utils/dimensions"
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS } from '../../constants';
+import { Sizes, getFontSize } from '../../utils/dimensions';
+import authService from '../../services/authService';
+import { useAppStore } from '../../store/useAppStore';
+import LoadingOverlay from '../../components/common/LoadingOverlay';
 
-const { width, height } = Dimensions.get("window")
-
+// Steps tanımını component dışına taşıyalım
 const steps = [
   {
     title: "Kişisel Bilgiler",
@@ -28,448 +42,392 @@ const steps = [
     color: "#f59e0b",
     fields: ["bio", "interests"]
   }
-]
+];
 
-export default function OnboardingScreen({ navigation }) {
-  const [step, setStep] = useState(0) // 0: tanıtım, 1+: form adımları
-  const [formData, setFormData] = useState({})
-  const colors = useThemeColors()
-  const slideAnim = useRef(new Animated.Value(0)).current
-  const fadeAnim = useRef(new Animated.Value(1)).current
-  const progressAnim = useRef(new Animated.Value(0)).current
+export default function OnboardingScreen({ navigation, route }) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    address: '',
+    city: '',
+    district: '',
+    bio: '',
+    interests: ''
+  });
+  
+  // User store'dan token ve userID al
+  const token = useAppStore(state => state.token);
+  const user = useAppStore(state => state.user);
 
-  useEffect(() => {
-    if (step > 0) {
-      Animated.timing(progressAnim, {
-        toValue: (step) / steps.length,
-        duration: 300,
-        useNativeDriver: false,
-      }).start()
+  const currentStepData = steps[currentStep];
+
+  // Form değer güncellemesi
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Sonraki adıma geçme
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleSubmit();
     }
-  }, [step])
+  };
 
-  // Tanıtım ekranı
-  if (step === 0) {
-    return (
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Arka plan görseli */}
-        <Image
-          source={{ uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" }}
-          style={styles.bgImage}
-          blurRadius={2}
-        />
-        {/* Yarı saydam overlay */}
-        <View style={styles.overlay} />
-        <View style={styles.introBox}>
-          <Image
-            source={{
-              uri: "https://cdn.pixabay.com/photo/2017/01/31/13/14/avatar-2026510_1280.png"
-            }}
-            style={styles.introImage}
-            resizeMode="contain"
-          />
-          <Text style={[styles.introTitle, { color: "#fff" }]}>
-            Profilini Hazırlıyoruz
-          </Text>
-          <Text style={[styles.introDesc, { color: "#fff" }]}>
-            Senin için ElAt’ı kullanıma hazır hale getireceğiz. Hadi başlayalım!
-          </Text>
-          <View style={styles.introButtons}>
-            <TouchableOpacity
-              style={[styles.skipButton, { borderColor: "#fff", backgroundColor: "rgba(255,255,255,0.15)" }]}
-              onPress={() => setStep(1)}
-            >
-              <Ionicons name="arrow-forward-circle-outline" size={20} color="#fff" />
-              <Text style={[styles.skipText, { color: "#fff" }]}>Atla</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.nextButton, { backgroundColor: "#10b981" }]}
-              onPress={() => setStep(1)}
-            >
-              <Text style={styles.nextText}>Devam Et</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: "#fff" }]}>
-            © {new Date().getFullYear()} ElAt • Birlikte daha güçlüyüz!
-          </Text>
-        </View>
-      </SafeAreaView>
-    )
-  }
+  // Geri gitme
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-  // Form adımları
-  const currentStep = step - 1
-  const currentStepData = steps[currentStep]
+  // Form gönderme
+  const handleSubmit = async () => {
+    console.log('HandleSubmit - User:', user); // Debug için
+    console.log('HandleSubmit - Token:', token); // Debug için
+    
+    if (!user?.id) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.');
+      navigation.navigate('Login');
+      return;
+    }
+    
+    if (!token) {
+      Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+      navigation.navigate('Login');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const profileData = {
+        userId: user.id,
+        ...formData,
+        isOnboardingComplete: true
+      };
+      
+      const result = await authService.completeProfile(profileData, token);
+      
+      if (result.success) {
+        Alert.alert("Başarılı", "Profiliniz başarıyla güncellendi.", [
+          { 
+            text: "Tamam", 
+            onPress: () => navigation.navigate("HomeScreen")
+          }
+        ]);
+      } else {
+        Alert.alert("Hata", result.error || "Profil güncellenirken bir hata oluştu.");
+      }
+    } catch (error) {
+      console.error("Profil güncelleme hatası:", error);
+      Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Skip fonksiyonu
+  const handleSkip = () => {
+    Alert.alert(
+      'Profili Atla',
+      'Profilinizi şimdi tamamlamak istemiyorsanız daha sonra ayarlar bölümünden düzenleyebilirsiniz.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        { 
+          text: 'Atla', 
+          onPress: () => navigation.navigate('HomeScreen')
+        }
+      ]
+    );
+  };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={currentStep === 0 ? () => navigation.goBack() : handleBack}
+          >
+            <Ionicons name="chevron-back" size={24} color={COLORS.PRIMARY} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+            <Text style={styles.skipText}>Atla</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
-          <View style={[styles.progressBackground, { backgroundColor: colors.border }]}>
-            <Animated.View 
+          <View style={styles.progressBar}>
+            <View 
               style={[
                 styles.progressFill, 
-                { 
-                  backgroundColor: currentStepData.color,
-                  width: progressAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0%', '100%'],
-                  })
-                }
+                { width: `${((currentStep + 1) / steps.length) * 100}%` }
               ]} 
             />
           </View>
-          <Text style={[styles.progressText, { color: colors.subtext }]}>
+          <Text style={styles.progressText}>
             {currentStep + 1} / {steps.length}
           </Text>
         </View>
-        {/* Step Icon ve Başlık */}
-        <Animated.View 
-          style={[
-            styles.stepHeader,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }]
-            }
-          ]}
+
+        <ScrollView 
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.stepIcon, { backgroundColor: currentStepData.color + "20" }]}>
-            <Ionicons name={currentStepData.icon} size={32} color={currentStepData.color} />
+          {/* Step Header */}
+          <View style={styles.stepHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: currentStepData.color }]}>
+              <Ionicons name={currentStepData.icon} size={32} color="white" />
+            </View>
+            <Text style={styles.stepTitle}>{currentStepData.title}</Text>
+            <Text style={styles.stepSubtitle}>{currentStepData.subtitle}</Text>
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>{currentStepData.title}</Text>
-          <Text style={[styles.subtitle, { color: colors.subtext }]}>{currentStepData.subtitle}</Text>
-        </Animated.View>
-        {/* Form */}
-        <Animated.View 
-          style={[
-            styles.formContainer,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }]
-            }
-          ]}
-        >
-          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {currentStep === 0 && (
-              <>
-                <InputField
-                  label="Ad"
-                  value={formData.firstName || ""}
-                  onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                  placeholder="Adınız"
-                  icon="person-outline"
-                />
-                <InputField
-                  label="Soyad"
-                  value={formData.lastName || ""}
-                  onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                  placeholder="Soyadınız"
-                  icon="person-outline"
-                />
-                <InputField
-                  label="Telefon"
-                  value={formData.phone || ""}
-                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                  placeholder="05XX XXX XX XX"
-                  keyboardType="phone-pad"
-                  icon="call-outline"
-                />
-              </>
-            )}
-            {currentStep === 1 && (
-              <>
-                <InputField
-                  label="Adres"
-                  value={formData.address || ""}
-                  onChangeText={(text) => setFormData({ ...formData, address: text })}
-                  placeholder="Sokak, mahalle..."
-                  multiline
-                  icon="home-outline"
-                />
-                <InputField
-                  label="İl"
-                  value={formData.city || ""}
-                  onChangeText={(text) => setFormData({ ...formData, city: text })}
-                  placeholder="İstanbul"
-                  icon="business-outline"
-                />
-                <InputField
-                  label="İlçe"
-                  value={formData.district || ""}
-                  onChangeText={(text) => setFormData({ ...formData, district: text })}
-                  placeholder="Kadıköy"
-                  icon="location-outline"
-                />
-              </>
-            )}
-            {currentStep === 2 && (
-              <>
-                <InputField
-                  label="Hakkınızda"
-                  value={formData.bio || ""}
-                  onChangeText={(text) => setFormData({ ...formData, bio: text })}
-                  placeholder="Kendinizi kısaca tanıtın..."
-                  multiline
-                  numberOfLines={4}
-                  icon="document-text-outline"
-                />
-                <InputField
-                  label="İlgi Alanları"
-                  value={formData.interests || ""}
-                  onChangeText={(text) => setFormData({ ...formData, interests: text })}
-                  placeholder="Spor, müzik, kitap..."
-                  icon="star-outline"
-                />
-              </>
-            )}
-          </ScrollView>
-        </Animated.View>
-        {/* Butonlar */}
-        <View style={styles.buttonContainer}>
-          {currentStep > 0 && (
-            <TouchableOpacity 
-              style={[styles.backButton, { borderColor: colors.border, backgroundColor: colors.surface }]} 
-              onPress={() => setStep(step - 1)}
-            >
-              <Ionicons name="arrow-back" size={20} color={colors.subtext} />
-              <Text style={[styles.backText, { color: colors.subtext }]}>Geri</Text>
-            </TouchableOpacity>
-          )}
+
+          {/* Form Fields */}
+          <View style={styles.formContainer}>
+            {currentStepData.fields.map((field) => (
+              <InputField
+                key={field}
+                label={getFieldLabel(field)}
+                icon={getFieldIcon(field)}
+                value={formData[field]}
+                onChangeText={(text) => updateFormData(field, text)}
+                placeholder={getFieldPlaceholder(field)}
+                multiline={field === 'bio' || field === 'interests'}
+                numberOfLines={field === 'bio' || field === 'interests' ? 4 : 1}
+                style={field === 'bio' || field === 'interests' ? styles.textArea : null}
+              />
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Bottom Button */}
+        <View style={styles.bottomContainer}>
           <TouchableOpacity 
-            style={[
-              styles.nextButton, 
-              { 
-                backgroundColor: currentStepData.color,
-                flex: currentStep > 0 ? 2 : 1
-              }
-            ]} 
-            onPress={() => {
-              if (currentStep < steps.length - 1) setStep(step + 1)
-              else navigation.replace("SuccessScreen") // SuccessScreen'e yönlendir
-            }}
+            style={[styles.nextButton, { backgroundColor: currentStepData.color }]}
+            onPress={handleNext}
           >
-            <Text style={styles.nextText}>
-              {currentStep === steps.length - 1 ? "Tamamla" : "İleri"}
+            <Text style={styles.nextButtonText}>
+              {currentStep === steps.length - 1 ? 'Tamamla' : 'Devam Et'}
             </Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Ionicons 
+              name={currentStep === steps.length - 1 ? "checkmark" : "chevron-forward"} 
+              size={20} 
+              color="white" 
+            />
           </TouchableOpacity>
         </View>
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.subtext }]}>
-            © {new Date().getFullYear()} ElAt • Birlikte daha güçlüyüz!
-          </Text>
-        </View>
       </KeyboardAvoidingView>
+
+      {/* Loading Overlay */}
+      <LoadingOverlay visible={loading} />
     </SafeAreaView>
-  )
+  );
 }
 
-function InputField({ label, icon, ...props }) {
-  const colors = useThemeColors()
+// InputField component
+const InputField = ({ label, icon, style, ...props }) => {
   return (
     <View style={styles.inputContainer}>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-      <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name={icon} size={20} color={colors.subtext} style={styles.inputIcon} />
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={[styles.inputWrapper, style]}>
+        <Ionicons name={icon} size={20} color={COLORS.GRAY} style={styles.inputIcon} />
         <TextInput
-          style={[styles.input, { color: colors.text }]}
-          placeholderTextColor={colors.subtext}
+          style={[styles.input, props.multiline && styles.multilineInput]}
+          placeholderTextColor={COLORS.LIGHT_GRAY}
           {...props}
         />
       </View>
     </View>
-  )
+  );
+};
+
+// Helper functions
+function getFieldLabel(field) {
+  const labels = {
+    firstName: 'Ad',
+    lastName: 'Soyad',
+    phone: 'Telefon',
+    address: 'Adres',
+    city: 'Şehir',
+    district: 'İlçe',
+    bio: 'Hakkınızda',
+    interests: 'İlgi Alanları'
+  };
+  return labels[field] || field;
+}
+
+function getFieldIcon(field) {
+  const icons = {
+    firstName: 'person-outline',
+    lastName: 'person-outline',
+    phone: 'call-outline',
+    address: 'home-outline',
+    city: 'business-outline',
+    district: 'location-outline',
+    bio: 'document-text-outline',
+    interests: 'heart-outline'
+  };
+  return icons[field] || 'text-outline';
+}
+
+function getFieldPlaceholder(field) {
+  const placeholders = {
+    firstName: 'Adınızı girin',
+    lastName: 'Soyadınızı girin',
+    phone: 'Telefon numaranızı girin',
+    address: 'Adresinizi girin',
+    city: 'Şehrinizi girin',
+    district: 'İlçenizi girin',
+    bio: 'Kendinizden bahsedin...',
+    interests: 'İlgi alanlarınızı yazın...'
+  };
+  return placeholders[field] || `${field} girin`;
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  bgImage: {
-    position: "absolute",
-    width: width,
-    height: height,
-    top: 0,
-    left: 0,
-    zIndex: 0,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    zIndex: 1,
-  },
-  introBox: {
+  container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: Sizes.spacing.xl,
-    paddingBottom: Sizes.spacing.l,
-    paddingHorizontal: Sizes.spacing.xl,
-    zIndex: 2,
+    backgroundColor: COLORS.WHITE,
   },
-  introImage: {
-    width: 180,
-    height: 180,
-    marginBottom: Sizes.spacing.l,
+  keyboardContainer: {
+    flex: 1,
   },
-  introTitle: {
-    fontSize: getFontSize(32, 36),
-    fontWeight: "800",
-    marginBottom: Sizes.spacing.s,
-    textAlign: "center",
-    letterSpacing: 0.5,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Sizes.spacing.l,
+    paddingVertical: Sizes.spacing.m,
   },
-  introDesc: {
-    fontSize: getFontSize(17, 19),
-    textAlign: "center",
-    color: "#fff",
-    marginBottom: Sizes.spacing.l,
-    lineHeight: 26,
+  backButton: {
+    padding: Sizes.spacing.s,
   },
-  introButtons: {
-    flexDirection: "row",
-    gap: Sizes.spacing.m,
-    marginTop: Sizes.spacing.xl,
+  skipButton: {
+    padding: Sizes.spacing.s,
   },
-  skipButton: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    borderWidth: 1.5, 
-    borderRadius: Sizes.borderRadius.l, 
-    height: 56, 
-    marginRight: Sizes.spacing.m,
-    paddingHorizontal: Sizes.spacing.xl,
-    gap: Sizes.spacing.s,
-  },
-  skipText: { 
-    fontWeight: "700", 
-    fontSize: getFontSize(16, 18),
-  },
-  nextButton: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    borderRadius: Sizes.borderRadius.l, 
-    height: 56, 
-    gap: Sizes.spacing.s,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    paddingHorizontal: Sizes.spacing.xl,
-  },
-  nextText: { 
-    fontWeight: "700", 
-    color: "#fff",
-    fontSize: getFontSize(16, 18),
+  skipText: {
+    fontSize: getFontSize(16),
+    color: COLORS.PRIMARY,
+    fontWeight: '500',
   },
   progressContainer: {
-    marginTop: Sizes.spacing.xl,
-    marginBottom: Sizes.spacing.xxl,
-    paddingHorizontal: Sizes.spacing.xl,
+    paddingHorizontal: Sizes.spacing.l,
+    paddingBottom: Sizes.spacing.l,
   },
-  progressBackground: {
-    height: 6,
-    borderRadius: 3,
-    marginBottom: Sizes.spacing.s,
+  progressBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
   },
   progressFill: {
-    height: "100%",
-    borderRadius: 3,
+    height: '100%',
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 2,
   },
   progressText: {
-    fontSize: getFontSize(14, 16),
-    fontWeight: "600",
-    textAlign: "center",
+    textAlign: 'center',
+    marginTop: Sizes.spacing.s,
+    fontSize: getFontSize(12),
+    color: COLORS.GRAY,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: Sizes.spacing.l,
   },
   stepHeader: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: Sizes.spacing.xl,
   },
-  stepIcon: {
+  iconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Sizes.spacing.l,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Sizes.spacing.m,
   },
-  title: { 
-    fontSize: getFontSize(28, 32), 
-    fontWeight: "800", 
+  stepTitle: {
+    fontSize: getFontSize(24),
+    fontWeight: 'bold',
+    color: COLORS.BLACK,
     marginBottom: Sizes.spacing.s,
-    textAlign: "center",
+    textAlign: 'center',
   },
-  subtitle: { 
-    fontSize: getFontSize(16, 18),
-    textAlign: "center",
+  stepSubtitle: {
+    fontSize: getFontSize(16),
+    color: COLORS.GRAY,
+    textAlign: 'center',
     lineHeight: 24,
-    maxWidth: 340,
   },
   formContainer: {
-    flex: 1,
-    paddingHorizontal: Sizes.spacing.xl,
+    marginBottom: Sizes.spacing.xl,
   },
-  form: { 
-    flex: 1,
-  },
-  inputContainer: { 
+  inputContainer: {
     marginBottom: Sizes.spacing.l,
   },
-  label: { 
-    fontSize: getFontSize(16, 18), 
-    fontWeight: "600", 
+  inputLabel: {
+    fontSize: getFontSize(16),
+    fontWeight: '500',
+    color: COLORS.BLACK,
     marginBottom: Sizes.spacing.s,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: Sizes.borderWidth.default,
-    borderRadius: Sizes.borderRadius.l,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     paddingHorizontal: Sizes.spacing.m,
-    minHeight: 56,
-  },
-  inputIcon: {
-    marginRight: Sizes.spacing.m,
-  },
-  input: { 
-    flex: 1,
-    fontSize: getFontSize(16, 18),
     paddingVertical: Sizes.spacing.m,
   },
-  buttonContainer: { 
-    flexDirection: "row", 
-    gap: Sizes.spacing.m, 
-    paddingHorizontal: Sizes.spacing.xl,
-    paddingBottom: Sizes.spacing.xl,
+  inputIcon: {
+    marginRight: Sizes.spacing.s,
+    marginTop: 2,
   },
-  backButton: { 
-    flex: 1, 
-    flexDirection: "row", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    borderWidth: Sizes.borderWidth.default, 
-    borderRadius: Sizes.borderRadius.l, 
-    height: 56, 
-    gap: Sizes.spacing.s,
+  input: {
+    flex: 1,
+    fontSize: getFontSize(16),
+    color: COLORS.BLACK,
+    paddingVertical: 0,
   },
-  backText: { 
-    fontWeight: "600",
-    fontSize: getFontSize(16, 18),
+  multilineInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
-  footer: {
-    alignItems: "center",
-    paddingBottom: Sizes.spacing.l,
-    paddingTop: Sizes.spacing.s,
-    zIndex: 2,
+  textArea: {
+    alignItems: 'flex-start',
   },
-  footerText: {
-    fontSize: getFontSize(13, 14),
-    textAlign: "center",
-    opacity: 0.7,
+  bottomContainer: {
+    paddingHorizontal: Sizes.spacing.l,
+    paddingVertical: Sizes.spacing.l,
   },
-})
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Sizes.spacing.m,
+    borderRadius: 12,
+  },
+  nextButtonText: {
+    fontSize: getFontSize(18),
+    fontWeight: '600',
+    color: 'white',
+    marginRight: Sizes.spacing.s,
+  },
+});

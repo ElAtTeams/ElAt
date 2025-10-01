@@ -1,9 +1,17 @@
 # TypeScript destekli Node.js backend için Dockerfile
-FROM node:20-alpine
+FROM node:18-alpine
+
+# Global olarak gerekli paketleri kur
+RUN npm install -g ts-node-dev typescript
+
 WORKDIR /app
+
+# Package dosyalarını kopyala ve bağımlılıkları kur
 COPY package*.json ./
 RUN npm install
+
+# Kaynak kodunu kopyala
 COPY . .
-RUN npm run build
+
 EXPOSE 4000
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

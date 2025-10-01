@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   Dimensions,
   Animated,
   FlatList,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'react-native';
 import { Sizes, getFontSize, getSize } from '../utils/dimensions';
+import { COLORS, THEME } from '../constants';
 
 const { width } = Dimensions.get('window');
 
@@ -20,26 +22,34 @@ const slides = [
   {
     id: '1',
     title: 'Komşularınla Tanış',
-    description: 'Çevrende yaşayan güvenilir komşularınla tanış, yardımlaş ve paylaş.',
-    image: { uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80' },
+    description: 'Çevrende yaşayan insanlarla güvenli bir şekilde tanış ve topluluk oluştur.',
+    icon: '👋',
+    gradient: ['#667eea', '#764ba2'],
+    bgColor: '#f8faff',
   },
   {
     id: '2',
-    title: 'Yardım İste',
-    description: 'İhtiyacın olduğunda komşularından yardım isteyebilir, karşılıklı destek olabilirsin.',
-    image: { uri: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80' },
+    title: 'Yardım İste & Ver',
+    description: 'İhtiyacın olduğunda yardım iste, sen de başkalarına destek ol.',
+    icon: '�',
+    gradient: ['#f093fb', '#f5576c'],
+    bgColor: '#fff5f8',
   },
   {
     id: '3',
-    title: 'Eşya Paylaş',
-    description: 'Kullanmadığın eşyaları komşularınla paylaşabilir, ihtiyacı olanlara destek olabilirsin.',
-    image: { uri: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80' },
+    title: 'Eşya Değişimi',
+    description: 'Kullanmadığın eşyaları paylaş, ihtiyacın olanları bul.',
+    icon: '♻️',
+    gradient: ['#4facfe', '#00f2fe'],
+    bgColor: '#f0fdff',
   },
   {
     id: '4',
-    title: 'Güvenle İletişim Kur',
-    description: 'Güvenli mesajlaşma sistemi ile komşularınla kolayca iletişim kurabilirsin.',
-    image: { uri: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=400&q=80' },
+    title: 'Güvenli İletişim',
+    description: 'Korunmuş mesajlaşma ile komşularınla güvenle iletişim kur.',
+    icon: '�',
+    gradient: ['#43e97b', '#38f9d7'],
+    bgColor: '#f0fff4',
   },
 ];
 
@@ -96,30 +106,37 @@ export default function WelcomeScreen({ navigation }) {
             { opacity, transform: [{ translateX }, { scale }] },
           ]}
         >
-          <View style={styles.iconContainer}>
-            <Image
-              source={item.image}
-              style={{
-                width: getSize(120, 150),
-                height: getSize(120, 150),
-                borderRadius: getSize(60, 75),
-              }}
-              resizeMode="cover"
-            />
+          <View style={styles.iconWrapper}>
+            <View style={[styles.iconContainer, { 
+              backgroundColor: COLORS.WHITE
+            }]}>
+              <Text style={styles.iconText}>{item.icon}</Text>
+            </View>
           </View>
-          <Text style={styles.slideTitle}>{item.title}</Text>
-          <Text style={styles.slideDescription}>{item.description}</Text>
+          
+          <View style={styles.textContainer}>
+            <Text style={styles.slideTitle}>{item.title}</Text>
+            <Text style={styles.slideDescription}>{item.description}</Text>
+          </View>
         </Animated.View>
       </View>
     );
   };
-  // Otomatik geçiş effecti
-  React.useEffect(() => {
+
+  useEffect(() => {
     const timer = setInterval(() => {
-      let nextIndex = currentIndex + 1;
-      if (nextIndex >= slides.length) nextIndex = 0;
-      slidesRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      const nextIndex = currentIndex === slides.length - 1 ? 0 : currentIndex + 1;
+      try {
+        slidesRef.current?.scrollToIndex({ 
+          index: nextIndex, 
+          animated: true,
+          viewPosition: 0.5 
+        });
+      } catch (error) {
+        console.log('Auto-scroll error:', error);
+      }
     }, 5000);
+
     return () => clearInterval(timer);
   }, [currentIndex]);
 
@@ -131,13 +148,19 @@ export default function WelcomeScreen({ navigation }) {
 
           const scale = scrollX.interpolate({
             inputRange,
-            outputRange: [1, 1.5, 1],
+            outputRange: [1, 1.2, 1],
+            extrapolate: 'clamp',
+          });
+
+          const scaleX = scrollX.interpolate({
+            inputRange,
+            outputRange: [1, 2.5, 1],
             extrapolate: 'clamp',
           });
 
           const opacity = scrollX.interpolate({
             inputRange,
-            outputRange: [0.3, 1, 0.3],
+            outputRange: [0.4, 1, 0.4],
             extrapolate: 'clamp',
           });
 
@@ -149,6 +172,7 @@ export default function WelcomeScreen({ navigation }) {
                 {
                   opacity,
                   transform: [{ scale }],
+                  backgroundColor: index === currentIndex ? COLORS.PRIMARY : COLORS.GRAY + '40',
                 },
               ]}
             />
@@ -159,11 +183,20 @@ export default function WelcomeScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.logo}>ElAt</Text>
-        <Text style={styles.welcomeText}>ElAt'a hoş geldin!</Text>
-        <Text style={styles.subtitle}>Komşularınla yardımlaşmanın en kolay yolu.</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Header with gradient background */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerGradient} />
+        <SafeAreaView style={styles.header}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>ElAt</Text>
+            {/* Logo shadow kaldırıldı */}
+          </View>
+          <Text style={styles.welcomeText}>Komşuluk Uygulaması</Text>
+          <Text style={styles.subtitle}>Çevrende yaşayanlarla bağlan</Text>
+        </SafeAreaView>
       </View>
 
       <AnimatedFlatList
@@ -186,50 +219,240 @@ export default function WelcomeScreen({ navigation }) {
         maxToRenderPerBatch={1}
         windowSize={3}
         removeClippedSubviews={true}
+        contentContainerStyle={{ justifyContent: 'center', alignItems: 'center' }}
       />
 
       <Pagination />
 
-      <View style={styles.buttons}>
-        <TouchableOpacity
-          style={styles.registerButton}
-          onPress={() => navigation.navigate('Register')}
-        >
-          <Text style={styles.registerButtonText}>Üye Ol</Text>
-        </TouchableOpacity>
+      {/* Bottom buttons with floating design */}
+      <SafeAreaView style={styles.bottomContainer}>
+        <View style={styles.buttons}>
+          <TouchableOpacity
+            style={styles.registerButton}
+            onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.buttonGradient} />
+            <Text style={styles.registerButtonText}>✨ Hemen Başla</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.loginButtonText}>Giriş Yap</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.loginButtonText}>Zaten hesabım var</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { alignItems: 'center', paddingHorizontal: Sizes.spacing.l, paddingTop: Sizes.spacing.l },
-  logo: { fontSize: getFontSize(32, 38), fontWeight: 'bold', color: '#1a1a1a', marginBottom: Sizes.spacing.l },
-  welcomeText: { fontSize: getFontSize(24, 28), color: '#10b981', marginBottom: Sizes.spacing.s },
-  subtitle: { fontSize: getFontSize(16, 18), textAlign: 'center', color: '#666', marginBottom: Sizes.spacing.xl },
-  slideContainer: { width, alignItems: 'center', paddingHorizontal: Sizes.spacing.l },
-  slideContent: { alignItems: 'center', paddingVertical: Sizes.spacing.l },
-  iconContainer: {
-    width: getSize(160, 200), height: getSize(160, 200), borderRadius: 999,
-    backgroundColor: '#f0fdf4', justifyContent: 'center', alignItems: 'center',
-    marginBottom: Sizes.spacing.xl, elevation: 2,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
+  container: {
+    flex: 1,
+    backgroundColor: '#fafbff',
   },
-  slideTitle: { fontSize: getFontSize(24, 28), fontWeight: 'bold', color: '#1a1a1a', marginBottom: Sizes.spacing.m, textAlign: 'center' },
-  slideDescription: { fontSize: getFontSize(16, 18), color: '#666', textAlign: 'center', lineHeight: getSize(24, 28), paddingHorizontal: Sizes.spacing.l },
-  paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Sizes.spacing.xl, marginBottom: Sizes.spacing.xl },
-  dot: { width: getSize(8, 10), height: getSize(8, 10), borderRadius: getSize(4, 5), backgroundColor: '#10b981', marginHorizontal: Sizes.spacing.xs },
-  buttons: { paddingHorizontal: Sizes.spacing.l, paddingBottom: Sizes.spacing.l, gap: Sizes.spacing.s },
-  registerButton: { backgroundColor: '#10b981', borderRadius: 12, height: Sizes.button.height, justifyContent: 'center', alignItems: 'center' },
-  registerButtonText: { color: '#fff', fontSize: getFontSize(16, 18), fontWeight: '600' },
-  loginButton: { backgroundColor: '#fff', borderRadius: 12, height: Sizes.button.height, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#10b981' },
-  loginButtonText: { color: '#10b981', fontSize: getFontSize(16, 18), fontWeight: '600' },
+  
+  // Header Styles
+  headerContainer: {
+    position: 'relative',
+    paddingBottom: Sizes.spacing.xl,
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: getSize(180, 200),
+    backgroundColor: COLORS.PRIMARY,
+    borderBottomLeftRadius: getSize(30, 35),
+    borderBottomRightRadius: getSize(30, 35),
+    opacity: 0.1,
+  },
+  header: {
+    alignItems: 'center',
+    paddingHorizontal: Sizes.spacing.l,
+    paddingTop: Sizes.spacing.xl,
+    paddingBottom: Sizes.spacing.l,
+  },
+  logoContainer: {
+    position: 'relative',
+    width: getSize(90, 100),
+    height: getSize(90, 100),
+    borderRadius: getSize(45, 50),
+    backgroundColor: COLORS.WHITE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Sizes.spacing.l,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  logoShadow: {
+    display: 'none', // Gradient kullanılmıyor
+  },
+  logo: {
+    fontSize: getFontSize(32, 36),
+    fontWeight: 'bold',
+    color: COLORS.PRIMARY,
+    letterSpacing: 2,
+  },
+  welcomeText: {
+    fontSize: getFontSize(26, 30),
+    fontWeight: 'bold',
+    color: COLORS.BLACK,
+    marginBottom: Sizes.spacing.xs,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: getFontSize(16, 18),
+    textAlign: 'center',
+    color: COLORS.GRAY,
+    lineHeight: getSize(22, 25),
+    opacity: 0.8,
+  },
+  slideContainer: {
+    width,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Sizes.spacing.l,
+    paddingVertical: Sizes.spacing.m,
+    borderRadius: getSize(25, 30),
+  },
+  slideContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Sizes.spacing.l,
+  },
+  iconWrapper: {
+    position: 'relative',
+    marginBottom: Sizes.spacing.xl,
+  },
+  iconContainer: {
+    width: getSize(120, 140),
+    height: getSize(120, 140),
+    borderRadius: getSize(60, 70),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  iconGlow: {
+    position: 'absolute',
+    width: getSize(140, 160),
+    height: getSize(140, 160),
+    borderRadius: getSize(70, 80),
+    top: -10,
+    left: -10,
+    zIndex: -1,
+    opacity: 0.3,
+  },
+  iconText: {
+    fontSize: getFontSize(50, 60),
+  },
+  textContainer: {
+    alignItems: 'center',
+    paddingHorizontal: Sizes.spacing.s,
+  },
+  slideTitle: {
+    fontSize: getFontSize(24, 28),
+    fontWeight: 'bold',
+    color: COLORS.BLACK,
+    marginBottom: Sizes.spacing.m,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  slideDescription: {
+    fontSize: getFontSize(16, 18),
+    color: COLORS.GRAY,
+    textAlign: 'center',
+    lineHeight: getSize(24, 28),
+    paddingHorizontal: Sizes.spacing.s,
+    opacity: 0.9,
+  },
+  
+  // Pagination Styles
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: Sizes.spacing.l,
+  },
+  dot: {
+    width: getSize(12, 14),
+    height: getSize(12, 14),
+    borderRadius: getSize(6, 7),
+    backgroundColor: COLORS.PRIMARY,
+    marginHorizontal: Sizes.spacing.xs,
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  // Button Styles
+  bottomContainer: {
+    backgroundColor: COLORS.WHITE,
+    paddingTop: Sizes.spacing.l,
+    borderTopLeftRadius: getSize(25, 30),
+    borderTopRightRadius: getSize(25, 30),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  buttons: {
+    paddingHorizontal: Sizes.spacing.l,
+    paddingBottom: Sizes.spacing.l,
+    gap: Sizes.spacing.m,
+  },
+  registerButton: {
+    position: 'relative',
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: THEME.BORDER_RADIUS.LARGE,
+    height: getSize(56, 60),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  buttonGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  registerButtonText: {
+    color: COLORS.WHITE,
+    fontSize: getFontSize(18, 20),
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  loginButton: {
+    backgroundColor: 'transparent',
+    borderRadius: THEME.BORDER_RADIUS.LARGE,
+    height: getSize(50, 54),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    color: COLORS.GRAY,
+    fontSize: getFontSize(16, 18),
+    fontWeight: '600',
+    opacity: 0.8,
+  },
 });

@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: elatdb
+      POSTGRES_USER: elatuser
+      POSTGRES_PASSWORD: elatuser123
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  backend:
+    build: .
+    restart: always
+    environment:
+      DATABASE_URL: postgres://elatuser:elatuser123@db:5432/elatdb
+      JWT_SECRET: elatsecret123456
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+volumes:
+  db_data:

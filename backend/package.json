@@ -1,36 +1,31 @@
 {
-  "name": "backend",
+  "name": "elat-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js"
   },
-  "author": "", 
-    "name": "elat-backend",
-    "version": "1.0.0",
-    "main": "dist/app.js",
-    "scripts": {
-      "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
-      "build": "tsc",
-      "start": "node dist/app.js"
-    },
-    "dependencies": {
-      "bcryptjs": "^2.4.3",
-      "cors": "^2.8.5",
-      "dotenv": "^16.3.1",
-      "express": "^4.18.2",
-      "jsonwebtoken": "^9.0.2",
-      "pg": "^8.11.3",
-      "sequelize": "^6.35.1"
-    },
-    "devDependencies": {
-      "@types/bcryptjs": "^2.4.2",
-      "@types/cors": "^2.8.17",
-      "@types/express": "^4.17.21",
-      "@types/jsonwebtoken": "^9.0.5",
-      "@types/node": "^20.11.30",
-      "ts-node-dev": "^2.0.0",
-      "typescript": "^5.4.5"
-    }
+  "author": "",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "sequelize": "^6.35.1",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.11.30",
+    "@types/swagger-ui-express": "^4.1.8",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
   }
-
+}
