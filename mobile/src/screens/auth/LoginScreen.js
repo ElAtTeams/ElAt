@@ -20,7 +20,7 @@ import LoadingOverlay from '../../components/common/LoadingOverlay';
 import { useForm } from '../../hooks/useForm';
 import { VALIDATION_RULES } from '../../utils/validation';
 import authService from '../../services/authService';
-import { useAppStore } from '../../store/useAppStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { Sizes, getFontSize } from '../../utils/dimensions';
 import { COLORS } from '../../constants';
 
@@ -28,7 +28,7 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
-  const login = useAppStore(state => state.login);
+  const { setAuthFromResponse } = useAuth();
 
   const {
     values,
@@ -53,16 +53,13 @@ export default function LoginScreen({ navigation }) {
       const result = await authService.login(values);
       
       if (result.success) {
-        // Token ve user bilgilerini store'a kaydet
-        login(result.data);
-        
-        // Kullanıcının onboarding tamamlanıp tamamlanmadığını kontrol et
-        const needsOnboarding = !result.data.user?.isOnboardingComplete;
-        
+        // Persist and sync via AuthContext helper
+        const setResult = await setAuthFromResponse(result.data);
+        setLoading(false);
         Alert.alert('Başarılı', 'Giriş başarılı!', [
           { 
             text: 'Tamam', 
-            onPress: () => navigation.navigate(needsOnboarding ? 'OnboardingScreen' : 'HomeScreen') 
+            onPress: () => navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs') 
           }
         ]);
       } else {

@@ -20,7 +20,7 @@ import LoadingOverlay from '../../components/common/LoadingOverlay';
 import { useForm } from '../../hooks/useForm';
 import { VALIDATION_RULES } from '../../utils/validation';
 import authService from '../../services/authService';
-import { useAppStore } from '../../store/useAppStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { Sizes, getFontSize } from '../../utils/dimensions';
 import { COLORS } from '../../constants';
 
@@ -29,7 +29,7 @@ export default function RegisterScreen({ navigation }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
-  const login = useAppStore(state => state.login);
+  const { setAuthFromResponse } = useAuth();
 
   const {
     values,
@@ -68,10 +68,11 @@ export default function RegisterScreen({ navigation }) {
       });
       
       if (result.success) {
-        // Token ve user bilgilerini store'a kaydet
-        login(result.data);
+        // Use AuthContext helper to persist and sync state
+        const setResult = await setAuthFromResponse(result.data);
+        setLoading(false);
         Alert.alert('Başarılı', 'Hesabınız oluşturuldu! Profilinizi tamamlayalım.', [
-          { text: 'Tamam', onPress: () => navigation.navigate('OnboardingScreen') }
+          { text: 'Tamam', onPress: () => navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs') }
         ]);
       } else {
         setGeneralError(result.error);

@@ -4,6 +4,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import * as Google from "expo-auth-session/providers/google";
 import { Platform } from "react-native";
+import { API_BASE_URL, AUTH_ENDPOINTS } from '../constants';
+import authService from '../services/authService';
+import { useAppStore } from '../store/useAppStore';
 
 const AuthContext = createContext({});
 
@@ -21,13 +24,13 @@ export const AuthProvider = ({ children }) => {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
   const [apiStatus, setApiStatus] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  // API Configuration
-  const API_BASE_URL = __DEV__ 
-    ? Platform.OS === 'android' 
-      ? "http://10.0.2.2:3001/api" 
-      : "http://localhost:3001/api"
-    : "https://your-production-api.com";
+  // Use central constants for API base URL
+  // (API_BASE_URL imported from constants)
+  // If in dev and running on android emulator we rely on constants already set to 10.0.2.2:4000
 
   // Google OAuth setup
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -67,16 +70,28 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthState = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const storedToken = await AsyncStorage.getItem("token");
       const userData = await AsyncStorage.getItem("user");
 
-      if (token && userData) {
+      console.log('Stored Token:', storedToken);
+      console.log('Stored User:', userData);
+
+      if (storedToken && userData) {
         // Verify token validity before setting user
-        const isValid = await verifyToken(token);
+        const isValid = await verifyToken(storedToken);
         if (isValid) {
-          setUser(JSON.parse(userData));
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          setNeedsOnboarding(!parsedUser.isOnboardingComplete);
+          console.log('Auth restored:', { 
+            hasUser: !!parsedUser, 
+            needsOnboarding: !parsedUser.isOnboardingComplete 
+          });
         } else {
           await AsyncStorage.multiRemove(["token", "user"]);
+          setIsAuthenticated(false);
         }
       }
     } catch (error) {
@@ -88,7 +103,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async (token) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-token`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.VERIFY_TOKEN}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +139,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error("API sunucusuna bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.LOGIN}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,11 +153,26 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || "Giriş yapılamadı");
       }
 
-      await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("user", JSON.stringify(data.data.user));
+      // Token ve user bilgilerini al
+      const newToken = data.token || data.data?.token;
+      const newUser = data.data?.user || data.user;
 
-      setUser(data.data.user);
-      return { success: true };
+      console.log('Login başarılı:', { hasToken: !!newToken, hasUser: !!newUser });
+
+      // AsyncStorage'a kaydet
+      await AsyncStorage.setItem("token", newToken);
+      await AsyncStorage.setItem("user", JSON.stringify(newUser));
+
+      // State'i güncelle
+      setToken(newToken);
+      setUser(newUser);
+      setIsAuthenticated(true);
+      setNeedsOnboarding(!newUser.isOnboardingComplete);
+
+      return { 
+        success: true, 
+        needsOnboarding: !newUser.isOnboardingComplete 
+      };
     } catch (error) {
       setError(error.message);
       return { 
@@ -159,7 +189,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.REGISTER}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,11 +210,26 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || "Kayıt olunamadı");
       }
 
-      await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("user", JSON.stringify(data.data.user));
+      // Token ve user bilgilerini al
+      const newToken = data.token || data.data?.token;
+      const newUser = data.data?.user || data.user;
 
-      setUser(data.data.user);
-      return { success: true };
+      console.log('Register başarılı:', { hasToken: !!newToken, hasUser: !!newUser });
+
+      // AsyncStorage'a kaydet
+      await AsyncStorage.setItem("token", newToken);
+      await AsyncStorage.setItem("user", JSON.stringify(newUser));
+
+      // State'i güncelle
+      setToken(newToken);
+      setUser(newUser);
+      setIsAuthenticated(true);
+      setNeedsOnboarding(true); // Yeni kullanıcı her zaman onboarding'e gider
+
+      return { 
+        success: true, 
+        needsOnboarding: true 
+      };
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -198,6 +243,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       await AsyncStorage.multiRemove(["token", "user"]);
       setUser(null);
+      setToken(null);
+      setIsAuthenticated(false);
+      setNeedsOnboarding(false);
+      console.log('Logout başarılı');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -215,7 +264,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error("Oturum bulunamadı");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/update-password`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.UPDATE_PASSWORD}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -249,7 +298,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.FORGOT_PASSWORD}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -277,7 +326,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/auth/reset-password/${token}`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.RESET_PASSWORD}/${token}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -308,7 +357,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error("Oturum bulunamadı");
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.REFRESH_TOKEN}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -339,7 +388,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.GOOGLE}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -366,12 +415,91 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Onboarding tamamlandı - artık servis katmanını kullanıyoruz (method ve parsing uyumu için)
+  const completeOnboarding = async (profileData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const storedToken = await AsyncStorage.getItem('token');
+      if (!storedToken) {
+        throw new Error('Token bulunamadı');
+      }
+
+      // authService.completeProfile PUT isteğini yapar ve cevabı güvenle parse eder
+      const result = await authService.completeProfile(profileData, storedToken);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Profil tamamlanamadı');
+      }
+
+      // Güncellenen kullanıcı verisi servis tarafından döndürülebilir
+      const updatedUser = result.data?.user || { ...user, ...profileData, isOnboardingComplete: true };
+
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setNeedsOnboarding(false);
+
+      console.log('Onboarding tamamlandı');
+      return { success: true };
+    } catch (error) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setAuthFromResponse = async (data) => {
+    try {
+      if (!data) return { success: false };
+      const rawToken = data.token || data.data?.token;
+      // sanitize token: trim whitespace and strip surrounding quotes (sometimes backend/client libs add them)
+      const newToken = typeof rawToken === 'string' ? rawToken.trim().replace(/^\"|\"$/g, '').replace(/^\'|\'$/g, '') : rawToken;
+      const newUser = data.data?.user || data.user;
+
+      if (!newToken || !newUser) return { success: false, error: 'Eksik token veya kullanıcı bilgisi' };
+
+      // Kaydet
+      await AsyncStorage.setItem('token', newToken);
+      await AsyncStorage.setItem('user', JSON.stringify(newUser));
+
+      // Context state
+      setToken(newToken);
+      setUser(newUser);
+      setIsAuthenticated(true);
+      setNeedsOnboarding(!newUser.isOnboardingComplete);
+
+      // Sync to zustand store (iletişim için global store kullanan eski App.js'i desteklemek için)
+      try {
+        const store = useAppStore.getState();
+        if (store && typeof store.login === 'function') {
+          store.login({ token: newToken, user: newUser });
+        }
+      } catch (e) {
+        // ignore
+        console.warn('Zustand store sync failed:', e?.message || e);
+      }
+
+      return { success: true, needsOnboarding: !newUser.isOnboardingComplete };
+    } catch (error) {
+      console.error('setAuthFromResponse error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
+    // State
     user,
     loading,
     location,
     error,
     apiStatus,
+    token,
+    isAuthenticated,
+    needsOnboarding,
+    
+    // Methods
     login,
     register,
     logout,
@@ -379,6 +507,8 @@ export const AuthProvider = ({ children }) => {
     forgotPassword,
     resetPassword,
     refreshToken,
+    completeOnboarding,
+    setAuthFromResponse,
     signInWithGoogle: () => promptAsync(),
     clearError: () => setError(null),
   };

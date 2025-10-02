@@ -9,6 +9,10 @@ export const AUTH_ENDPOINTS = {
   PROFILE: '/auth/profile',
   FORGOT_PASSWORD: '/auth/forgot-password',
   RESET_PASSWORD: '/auth/reset-password',
+  VERIFY_TOKEN: '/auth/verify-token',
+  UPDATE_PASSWORD: '/auth/update-password',
+  REFRESH_TOKEN: '/auth/refresh-token',
+  GOOGLE: '/auth/google',
 };
 
 // App Colors

@@ -1,6 +1,20 @@
 import { API_BASE_URL, AUTH_ENDPOINTS } from '../constants';
 
 class AuthService {
+  // Helper to safely parse JSON responses and handle BOM/invalid JSON
+  async _parseResponse(response) {
+    const text = await response.text();
+    const cleaned = typeof text === 'string' ? text.replace(/^\uFEFF/, '').trim() : text;
+    if (!cleaned) return {};
+    try {
+      return JSON.parse(cleaned);
+    } catch (err) {
+      console.error('Failed to parse JSON response. Raw text:', cleaned);
+      // Throw a clearer error so callers can show a useful message
+      throw new Error('Sunucudan beklenmeyen cevap (geçersiz JSON).');
+    }
+  }
+
   async register(userData) {
     try {
       const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.REGISTER}`, {
@@ -11,7 +25,7 @@ class AuthService {
         body: JSON.stringify(userData),
       });
 
-      const data = await response.json();
+      const data = await this._parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Kayıt işlemi başarısız');
@@ -33,7 +47,7 @@ class AuthService {
         body: JSON.stringify(credentials),
       });
 
-      const data = await response.json();
+      const data = await this._parseResponse(response);
       console.log('Login Response:', data); // Debug için
 
       if (!response.ok) {
@@ -64,7 +78,7 @@ class AuthService {
         body: JSON.stringify(profileData),
       });
 
-      const data = await response.json();
+      const data = await this._parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Profil güncelleme başarısız');
@@ -85,7 +99,7 @@ class AuthService {
         }
       });
 
-      const data = await response.json();
+      const data = await this._parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Profil bilgileri alınamadı');
@@ -107,7 +121,7 @@ class AuthService {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
+      const data = await this._parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Şifre sıfırlama başarısız');

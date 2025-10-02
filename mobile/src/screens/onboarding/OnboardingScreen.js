@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants';
 import { Sizes, getFontSize } from '../../utils/dimensions';
 import authService from '../../services/authService';
-import { useAppStore } from '../../store/useAppStore';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
 
 // Steps tanımını component dışına taşıyalım
@@ -46,7 +46,6 @@ const steps = [
 
 export default function OnboardingScreen({ navigation, route }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -58,9 +57,8 @@ export default function OnboardingScreen({ navigation, route }) {
     interests: ''
   });
   
-  // User store'dan token ve userID al
-  const token = useAppStore(state => state.token);
-  const user = useAppStore(state => state.user);
+  // Auth context'ten bilgileri al
+  const { user, token, loading, completeOnboarding } = useAuth();
 
   const currentStepData = steps[currentStep];
 
@@ -102,7 +100,6 @@ export default function OnboardingScreen({ navigation, route }) {
       return;
     }
     
-    setLoading(true);
     try {
       const profileData = {
         userId: user.id,
@@ -110,13 +107,17 @@ export default function OnboardingScreen({ navigation, route }) {
         isOnboardingComplete: true
       };
       
-      const result = await authService.completeProfile(profileData, token);
+      const result = await completeOnboarding(profileData);
       
       if (result.success) {
         Alert.alert("Başarılı", "Profiliniz başarıyla güncellendi.", [
           { 
             text: "Tamam", 
-            onPress: () => navigation.navigate("HomeScreen")
+            onPress: () => {
+              // AuthProvider otomatik olarak needsOnboarding=false yapacak
+              // ve kullanıcıyı ana ekrana yönlendirecek
+              console.log('Onboarding tamamlandı, ana ekrana yönlendiriliyor');
+            }
           }
         ]);
       } else {
@@ -125,13 +126,11 @@ export default function OnboardingScreen({ navigation, route }) {
     } catch (error) {
       console.error("Profil güncelleme hatası:", error);
       Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
-    } finally {
-      setLoading(false);
     }
   };
 
   // Skip fonksiyonu
-  const handleSkip = () => {
+  const handleSkip = async () => {
     Alert.alert(
       'Profili Atla',
       'Profilinizi şimdi tamamlamak istemiyorsanız daha sonra ayarlar bölümünden düzenleyebilirsiniz.',
@@ -139,7 +138,10 @@ export default function OnboardingScreen({ navigation, route }) {
         { text: 'İptal', style: 'cancel' },
         { 
           text: 'Atla', 
-          onPress: () => navigation.navigate('HomeScreen')
+          onPress: async () => {
+            // Onboarding'i tamamlanmış olarak işaretle
+            await completeOnboarding({});
+          }
         }
       ]
     );

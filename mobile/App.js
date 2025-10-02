@@ -3,9 +3,10 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { Ionicons } from "@expo/vector-icons"
-import { View, StatusBar } from "react-native"
+import { View, StatusBar, ActivityIndicator } from "react-native"
 import { useAppStore } from "./src/store/useAppStore"
 import { useThemeMeta } from "./src/store/themeStore"
+import { AuthProvider, useAuth } from "./src/contexts/AuthContext"
 
 // Auth Screens
 import WelcomeScreen from "./src/screens/WelcomeScreen"
@@ -84,7 +85,7 @@ function MainTabs() {
 }
 
 function AppNavigator() {
-  const { isLoggedIn, needsOnboarding } = useAppStore()
+  const { isAuthenticated, needsOnboarding, loading } = useAuth()
   const { colors: ui, isDark } = useThemeMeta()
 
   const navTheme = {
@@ -99,11 +100,19 @@ function AppNavigator() {
     },
   }
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: ui.background }}>
+        <ActivityIndicator size="large" color={ui.primary} />
+      </View>
+    )
+  }
+
   return (
     <NavigationContainer theme={navTheme}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={ui.background} />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isLoggedIn ? (
+        {!isAuthenticated ? (
           // Auth Stack
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -145,5 +154,9 @@ function AppNavigator() {
 }
 
 export default function App() {
-  return <AppNavigator />
+  return (
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
+  )
 }

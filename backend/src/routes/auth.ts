@@ -142,6 +142,40 @@ router.get('/profile/:userId', authMiddleware, async (req: AuthRequest, res: Res
   }
 });
 
+// Token doğrulama endpoint'i
+router.post('/verify-token', authMiddleware, async (req: AuthRequest, res: Response) => {
+  // authMiddleware zaten token'ı doğruladı ve req.user'ı set etti
+  // Bu endpoint sadece token'ın geçerliliğini kontrol etmek için kullanılır
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Geçersiz token.' });
+    }
+
+    // Token geçerli, kullanıcı bilgilerini döndür
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+    }
+
+    res.json({ 
+      valid: true,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        isOnboardingComplete: user.isOnboardingComplete || false
+      }
+    });
+  } catch (err) {
+    console.error('Verify token error:', err);
+    res.status(500).json({ error: 'Token doğrulama başarısız.' });
+  }
+});
+
 // Şifre sıfırlama isteği (e-posta gönderme)
 router.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
