@@ -1,19 +1,20 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { useAuth } from "../../contexts/AuthContext"
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS } from "../../constants";
+import { Sizes, getFontSize } from "../../utils/dimensions";
+import authService from "../../services/authService";
+import ThemedAlert from "../../components/common/ThemedAlert";
 
 export default function ResetPasswordScreen({ navigation, route }) {
   const [password, setPassword] = useState("")
@@ -21,155 +22,251 @@ export default function ResetPasswordScreen({ navigation, route }) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [token, setToken] = useState("")
-  const { resetPassword } = useAuth()
+  const [resetToken, setResetToken] = useState("")
+  const [email, setEmail] = useState("")
+  const [alert, setAlert] = useState({ visible: false, type: 'info', title: '', message: '' });
 
   useEffect(() => {
-    // Get token from route params or deep link
-    if (route.params?.token) {
-      setToken(route.params.token)
+    // Get resetToken from route params
+    if (route.params?.resetToken) {
+      setResetToken(route.params.resetToken);
+      setEmail(route.params?.email || '');
     } else {
-      Alert.alert("Hata", "Geçersiz sıfırlama bağlantısı", [
-        { text: "Tamam", onPress: () => navigation.navigate("ForgotPassword") },
-      ])
+      showAlert('error', 'Hata', 'Geçersiz sıfırlama bağlantısı');
+      navigation.navigate("ForgotPassword");
     }
   }, [route.params])
 
+  const showAlert = (type, title, message) => {
+    setAlert({ visible: true, type, title, message });
+  };
+
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 6) {
+      errors.push('En az 6 karakter');
+    }
+    if (!/(?=.*[a-z])/.test(password)) {
+      errors.push('En az bir küçük harf');
+    }
+    if (!/(?=.*[A-Z])/.test(password)) {
+      errors.push('En az bir büyük harf');
+    }
+    if (!/(?=.*\d)/.test(password)) {
+      errors.push('En az bir rakam');
+    }
+    return errors;
+  };
+
   const handleSubmit = async () => {
     if (!password || !confirmPassword) {
-      Alert.alert("Hata", "Lütfen tüm alanları doldurun")
-      return
+      showAlert('error', 'Hata', 'Lütfen tüm alanları doldurun');
+      return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Hata", "Şifreler eşleşmiyor")
-      return
+      showAlert('error', 'Hata', 'Şifreler eşleşmiyor');
+      return;
     }
 
-    if (password.length < 6) {
-      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır")
-      return
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      showAlert('error', 'Şifre Gereksinimleri', `Şifreniz şu gereksinimleri karşılamalıdır:\n• ${passwordErrors.join('\n• ')}`);
+      return;
     }
 
-    if (!token) {
-      Alert.alert("Hata", "Geçersiz sıfırlama bağlantısı")
-      return
+    if (!resetToken) {
+      showAlert('error', 'Hata', 'Geçersiz sıfırlama bağlantısı');
+      return;
     }
 
     setIsLoading(true)
 
-    const result = await resetPassword(token, password)
+    try {
+      const result = await authService.resetPasswordWithToken(resetToken, password);
 
-    setIsLoading(false)
-
-    if (result.success) {
-      Alert.alert("Başarılı", "Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.", [
-        {
-          text: "Tamam",
-          onPress: () => navigation.navigate("Login"),
-        },
-      ])
-    } else {
-      Alert.alert("Hata", result.error)
+      if (result.success) {
+        // Success screen'e yönlendir
+        navigation.navigate('SuccessScreen', {
+          title: 'Şifre Değiştirildi!',
+          message: 'Şifreniz başarıyla güncellendi. Artık yeni şifrenizle giriş yapabilirsiniz.',
+          buttonText: 'Giriş Yap',
+          onButtonPress: () => {
+            navigation.navigate('Login');
+          }
+        });
+      } else {
+        showAlert('error', 'Hata', result.error || 'Şifre güncellenirken bir hata oluştu');
+      }
+    } catch (error) {
+      showAlert('error', 'Hata', 'Beklenmeyen bir hata oluştu');
+    } finally {
+      setIsLoading(false);
     }
   }
 
+  const passwordStrength = password ? validatePassword(password) : [];
+
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-        </TouchableOpacity>
-
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="lock-closed-outline" size={60} color="#10b981" />
-          </View>
-          <Text style={styles.title}>Yeni Şifre Oluştur</Text>
-          <Text style={styles.subtitle}>Hesabınız için yeni bir şifre belirleyin.</Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Yeni şifreniz"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoComplete="new-password"
-              autoCorrect={false}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-              <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Şifrenizi tekrar girin"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              autoComplete="new-password"
-              autoCorrect={false}
-            />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-              <Ionicons name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.passwordRequirements}>
-            <Text style={styles.requirementsTitle}>Şifre gereksinimleri:</Text>
-            <Text style={styles.requirementText}>• En az 6 karakter</Text>
-            <Text style={styles.requirementText}>• Güvenli bir şifre seçin</Text>
-          </View>
-
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
-            <Text style={styles.submitButtonText}>{isLoading ? "Şifre Güncelleniyor..." : "Şifreyi Güncelle"}</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.BLACK} />
           </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="shield-checkmark" size={60} color={COLORS.PRIMARY} />
+            </View>
+            <Text style={styles.title}>Yeni Şifre Oluştur</Text>
+            <Text style={styles.subtitle}>
+              {email ? `${email} hesabınız için` : 'Hesabınız için'} güvenli bir şifre belirleyin.
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.GRAY} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Yeni şifreniz"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoComplete="new-password"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={COLORS.GRAY} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.GRAY} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Şifrenizi tekrar girin"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoComplete="new-password"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} size={20} color={COLORS.GRAY} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.passwordRequirements}>
+              <Text style={styles.requirementsTitle}>Şifre gereksinimleri:</Text>
+              <View style={styles.requirementsList}>
+                <RequirementItem text="En az 6 karakter" met={password.length >= 6} />
+                <RequirementItem text="Küçük harf" met={/(?=.*[a-z])/.test(password)} />
+                <RequirementItem text="Büyük harf" met={/(?=.*[A-Z])/.test(password)} />
+                <RequirementItem text="Rakam" met={/(?=.*\d)/.test(password)} />
+              </View>
+            </View>
+
+            {password && confirmPassword && password !== confirmPassword && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.ERROR} />
+                <Text style={styles.errorText}>Şifreler eşleşmiyor</Text>
+              </View>
+            )}
+
+            <TouchableOpacity 
+              style={[
+                styles.submitButton, 
+                (isLoading || passwordStrength.length > 0 || password !== confirmPassword || !password) && styles.disabledButton
+              ]} 
+              onPress={handleSubmit} 
+              disabled={isLoading || passwordStrength.length > 0 || password !== confirmPassword || !password}
+            >
+              <Text style={styles.submitButtonText}>
+                {isLoading ? "Şifre Güncelleniyor..." : "Şifreyi Güncelle"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <ThemedAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, visible: false })}
+        buttons={[
+          {
+            text: 'Tamam',
+            style: 'primary'
+          }
+        ]}
+      />
+    </SafeAreaView>
   )
 }
+
+// Şifre gereksinimi item component'i
+const RequirementItem = ({ text, met }) => (
+  <View style={styles.requirementItem}>
+    <Ionicons 
+      name={met ? "checkmark-circle" : "ellipse-outline"} 
+      size={16} 
+      color={met ? COLORS.SUCCESS : COLORS.GRAY} 
+    />
+    <Text style={[styles.requirementText, met && styles.requirementMet]}>{text}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.WHITE,
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 24,
+    padding: Sizes.spacing.xl,
   },
   backIcon: {
     alignSelf: "flex-start",
-    marginBottom: 20,
-    padding: 8,
+    marginBottom: Sizes.spacing.l,
+    padding: Sizes.spacing.s,
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: Sizes.spacing.xl * 2,
   },
   iconContainer: {
-    marginBottom: 24,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.SECONDARY,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Sizes.spacing.l,
+    borderWidth: 2,
+    borderColor: COLORS.PRIMARY,
   },
   title: {
-    fontSize: 28,
+    fontSize: getFontSize(28),
     fontWeight: "bold",
-    color: "#1a1a1a",
-    marginBottom: 8,
+    color: COLORS.BLACK,
+    marginBottom: Sizes.spacing.s,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: getFontSize(16),
+    color: COLORS.GRAY,
     textAlign: "center",
     lineHeight: 24,
+    paddingHorizontal: Sizes.spacing.m,
   },
   form: {
     width: "100%",
@@ -180,49 +277,86 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e1e1e1",
     borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    backgroundColor: "#f8f9fa",
+    marginBottom: Sizes.spacing.m,
+    paddingHorizontal: Sizes.spacing.m,
+    backgroundColor: COLORS.LIGHT_GRAY,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: Sizes.spacing.s,
   },
   input: {
     flex: 1,
     height: 50,
-    fontSize: 16,
-    color: "#1a1a1a",
+    fontSize: getFontSize(16),
+    color: COLORS.BLACK,
   },
   eyeIcon: {
-    padding: 4,
+    padding: Sizes.spacing.xs,
   },
   passwordRequirements: {
-    backgroundColor: "#f8f9fa",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
+    backgroundColor: COLORS.SECONDARY,
+    padding: Sizes.spacing.m,
+    borderRadius: 12,
+    marginBottom: Sizes.spacing.l,
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
   },
   requirementsTitle: {
-    fontSize: 14,
+    fontSize: getFontSize(14),
     fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: 8,
+    color: COLORS.BLACK,
+    marginBottom: Sizes.spacing.s,
+  },
+  requirementsList: {
+    gap: Sizes.spacing.xs,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Sizes.spacing.s,
   },
   requirementText: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
+    fontSize: getFontSize(12),
+    color: COLORS.GRAY,
+  },
+  requirementMet: {
+    color: COLORS.SUCCESS,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Sizes.spacing.m,
+    paddingHorizontal: Sizes.spacing.s,
+  },
+  errorText: {
+    fontSize: getFontSize(12),
+    color: COLORS.ERROR,
+    marginLeft: Sizes.spacing.xs,
   },
   submitButton: {
-    backgroundColor: "#10b981",
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 12,
     height: 50,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  disabledButton: {
+    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
+    color: COLORS.WHITE,
+    fontSize: getFontSize(16),
     fontWeight: "600",
   },
 })

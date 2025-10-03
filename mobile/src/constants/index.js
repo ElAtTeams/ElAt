@@ -8,6 +8,7 @@ export const AUTH_ENDPOINTS = {
   COMPLETE_PROFILE: '/auth/complete-profile',
   PROFILE: '/auth/profile',
   FORGOT_PASSWORD: '/auth/forgot-password',
+  VERIFY_OTP: '/auth/verify-otp',
   RESET_PASSWORD: '/auth/reset-password',
   VERIFY_TOKEN: '/auth/verify-token',
   UPDATE_PASSWORD: '/auth/update-password',

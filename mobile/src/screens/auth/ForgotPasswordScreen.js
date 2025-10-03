@@ -1,12 +1,13 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions
+  KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Sizes, getFontSize, isTablet, getSize } from "../../utils/dimensions";
+import { COLORS } from "../../constants";
+import authService from "../../services/authService";
+import ThemedAlert from "../../components/common/ThemedAlert";
 
 const { width } = Dimensions.get("window");
 
@@ -14,35 +15,68 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [alert, setAlert] = useState({ visible: false, type: 'info', title: '', message: '' });
 
-  const handleSubmit = async () => {
-    if (!email) { Alert.alert("Hata", "Lütfen e‑posta adresinizi girin"); return; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) { Alert.alert("Hata", "Geçerli bir e‑posta adresi girin"); return; }
-
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true); // demo
-    }, 800);
+  const showAlert = (type, title, message) => {
+    setAlert({ visible: true, type, title, message });
   };
 
-  const handleResend = () => setIsSubmitted(false);
+  const handleSubmit = async () => {
+    if (!email) { 
+      showAlert('error', 'Hata', 'Lütfen e‑posta adresinizi girin');
+      return; 
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) { 
+      showAlert('error', 'Hata', 'Geçerli bir e‑posta adresi girin');
+      return; 
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const result = await authService.forgotPassword(email);
+      
+      if (result.success) {
+        setIsSubmitted(true);
+        showAlert('success', 'Email Gönderildi!', 'Şifre sıfırlama kodu e-posta adresinize gönderildi.');
+      } else {
+        showAlert('error', 'Hata', result.error || 'Şifre sıfırlama kodu gönderilirken bir hata oluştu.');
+      }
+    } catch (error) {
+      showAlert('error', 'Hata', 'Beklenmeyen bir hata oluştu.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setIsSubmitted(false);
+    setAlert({ visible: false, type: 'info', title: '', message: '' });
+  };
 
   if (isSubmitted) {
     return (
       <View style={styles.container}>
         <View style={styles.successContainer}>
-          <View style={{ marginBottom: Sizes.spacing.large }}>
-            <Ionicons name="checkmark-circle" size={80} color="#10b981" />
+          <View style={{ marginBottom: Sizes.spacing.l }}>
+            <Ionicons name="mail" size={80} color={COLORS.PRIMARY} />
           </View>
-          <Text style={styles.successTitle}>E‑posta Gönderildi!</Text>
+          <Text style={styles.successTitle}>Kod Gönderildi!</Text>
           <Text style={styles.successText}>
-            <Text style={styles.emailText}>{email}</Text> adresine şifre sıfırlama bağlantısı gönderdik.
+            <Text style={styles.emailText}>{email}</Text> adresine 6 haneli doğrulama kodu gönderdik.
           </Text>
-          <Text style={styles.instructionText}>E‑postanızı kontrol edip bağlantıya tıklayın.</Text>
+          <Text style={styles.instructionText}>
+            E-postanızı kontrol edin ve kodu girdikten sonra yeni şifrenizi belirleyebilirsiniz.
+          </Text>
 
           <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.continueButton} 
+              onPress={() => navigation.navigate("VerifyOTP", { email })}
+            >
+              <Text style={styles.continueButtonText}>Kodu Gir</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.resendButton} onPress={handleResend}>
               <Text style={styles.resendButtonText}>Tekrar Gönder</Text>
             </TouchableOpacity>
@@ -51,6 +85,20 @@ export default function ForgotPasswordScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
+        
+        <ThemedAlert
+          visible={alert.visible}
+          type={alert.type}
+          title={alert.title}
+          message={alert.message}
+          onClose={() => setAlert({ ...alert, visible: false })}
+          buttons={[
+            {
+              text: 'Tamam',
+              style: 'primary'
+            }
+          ]}
+        />
       </View>
     );
   }
@@ -61,19 +109,20 @@ export default function ForgotPasswordScreen({ navigation }) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=600&q=80" }}
-            style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: "#f0fdf4" }}
-            resizeMode="cover"
-          />
+          <View style={styles.iconCircle}>
+            <Ionicons name="key-outline" size={60} color={COLORS.PRIMARY} />
+          </View>
         </View>
+        
         <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={Sizes.icon.m} color="#1a1a1a" />
         </TouchableOpacity>
 
         <View style={styles.header}>
           <Text style={styles.title}>Şifremi Unuttum</Text>
-          <Text style={styles.subtitle}>E‑posta adresinizi girin, size şifırlama bağlantısı gönderelim.</Text>
+          <Text style={styles.subtitle}>
+            E‑posta adresinizi girin, size 6 haneli doğrulama kodu gönderelim.
+          </Text>
         </View>
 
         <View style={styles.form}>
@@ -88,11 +137,18 @@ export default function ForgotPasswordScreen({ navigation }) {
               autoCapitalize="none"
               autoComplete="email"
               autoCorrect={false}
+              editable={!isLoading}
             />
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
-            <Text style={styles.submitButtonText}>{isLoading ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}</Text>
+          <TouchableOpacity 
+            style={[styles.submitButton, isLoading && styles.disabledButton]} 
+            onPress={handleSubmit} 
+            disabled={isLoading}
+          >
+            <Text style={styles.submitButtonText}>
+              {isLoading ? "Gönderiliyor..." : "Doğrulama Kodu Gönder"}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -103,18 +159,42 @@ export default function ForgotPasswordScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+      
+      <ThemedAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, visible: false })}
+        buttons={[
+          {
+            text: 'Tamam',
+            style: 'primary'
+          }
+        ]}
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: COLORS.WHITE },
   scrollContainer: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: Sizes.spacing.xl },
   imageContainer: { width: "100%", alignItems: "center", marginBottom: Sizes.spacing.l },
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.SECONDARY,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: COLORS.PRIMARY,
+  },
   backIcon: { alignSelf: "flex-start", marginBottom: Sizes.spacing.l, padding: Sizes.spacing.s },
   header: { alignItems: "center", marginBottom: Sizes.spacing.xl },
-  title: { fontSize: getFontSize(28, 32), fontWeight: "bold", color: "#1a1a1a", marginBottom: Sizes.spacing.s, textAlign: "center" },
-  subtitle: { fontSize: getFontSize(16, 18), color: "#666", textAlign: "center", lineHeight: getSize(24, 28) },
+  title: { fontSize: getFontSize(28, 32), fontWeight: "bold", color: COLORS.BLACK, marginBottom: Sizes.spacing.s, textAlign: "center" },
+  subtitle: { fontSize: getFontSize(16, 18), color: COLORS.GRAY, textAlign: "center", lineHeight: getSize(24, 28) },
   form: { width: "100%" },
   inputContainer: {
     flexDirection: "row",
@@ -124,29 +204,40 @@ const styles = StyleSheet.create({
     borderRadius: Sizes.borderRadius.l,
     marginBottom: Sizes.spacing.xl,
     paddingHorizontal: Sizes.input.paddingH,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.LIGHT_GRAY,
   },
-  input: { flex: 1, height: Sizes.input.height, fontSize: getFontSize(16, 18), color: "#1a1a1a" },
+  input: { flex: 1, height: Sizes.input.height, fontSize: getFontSize(16, 18), color: COLORS.BLACK },
   submitButton: {
-    backgroundColor: "#10b981",
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: Sizes.borderRadius.l,
     height: Sizes.button.height,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Sizes.spacing.xl,
   },
-  submitButtonText: { color: "#fff", fontSize: getFontSize(16, 18), fontWeight: "600" },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  submitButtonText: { color: COLORS.WHITE, fontSize: getFontSize(16, 18), fontWeight: "600" },
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
-  footerText: { color: "#666", fontSize: getFontSize(14, 16) },
-  linkText: { color: "#10b981", fontSize: getFontSize(14, 16), fontWeight: "600" },
+  footerText: { color: COLORS.GRAY, fontSize: getFontSize(14, 16) },
+  linkText: { color: COLORS.PRIMARY, fontSize: getFontSize(14, 16), fontWeight: "600" },
   successContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: Sizes.spacing.l },
-  successTitle: { fontSize: getFontSize(24, 28), fontWeight: "bold", color: "#1a1a1a", marginBottom: Sizes.spacing.m, textAlign: "center" },
-  successText: { fontSize: getFontSize(16, 18), color: "#666", textAlign: "center", lineHeight: getSize(24, 28), marginBottom: Sizes.spacing.m },
-  emailText: { fontWeight: "600", color: "#1a1a1a" },
-  instructionText: { fontSize: getFontSize(14, 16), color: "#666", textAlign: "center", lineHeight: getSize(20, 24), marginBottom: Sizes.spacing.xl },
+  successTitle: { fontSize: getFontSize(24, 28), fontWeight: "bold", color: COLORS.BLACK, marginBottom: Sizes.spacing.m, textAlign: "center" },
+  successText: { fontSize: getFontSize(16, 18), color: COLORS.GRAY, textAlign: "center", lineHeight: getSize(24, 28), marginBottom: Sizes.spacing.m },
+  emailText: { fontWeight: "600", color: COLORS.BLACK },
+  instructionText: { fontSize: getFontSize(14, 16), color: COLORS.GRAY, textAlign: "center", lineHeight: getSize(20, 24), marginBottom: Sizes.spacing.xl },
   actionButtons: { width: "100%", gap: Sizes.spacing.s },
+  continueButton: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: Sizes.borderRadius.l,
+    paddingVertical: Sizes.spacing.m,
+    paddingHorizontal: Sizes.button.paddingH,
+    alignItems: "center",
+  },
+  continueButtonText: { color: COLORS.WHITE, fontSize: getFontSize(16, 18), fontWeight: "600" },
   resendButton: {
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.LIGHT_GRAY,
     borderWidth: Sizes.borderWidth.default,
     borderColor: "#e1e1e1",
     borderRadius: Sizes.borderRadius.l,
@@ -154,13 +245,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Sizes.button.paddingH,
     alignItems: "center",
   },
-  resendButtonText: { color: "#1a1a1a", fontSize: getFontSize(16, 18), fontWeight: "500" },
+  resendButtonText: { color: COLORS.BLACK, fontSize: getFontSize(16, 18), fontWeight: "500" },
   backButton: {
-    backgroundColor: "#10b981",
+    backgroundColor: "transparent",
     borderRadius: Sizes.borderRadius.l,
     paddingVertical: Sizes.spacing.m,
     paddingHorizontal: Sizes.button.paddingH,
     alignItems: "center",
   },
-  backButtonText: { color: "#fff", fontSize: getFontSize(16, 18), fontWeight: "600" },
+  backButtonText: { color: COLORS.PRIMARY, fontSize: getFontSize(16, 18), fontWeight: "600" },
 });

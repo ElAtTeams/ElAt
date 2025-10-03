@@ -124,6 +124,52 @@ class AuthService {
       const data = await this._parseResponse(response);
 
       if (!response.ok) {
+        throw new Error(data.error || 'Şifre sıfırlama kodu gönderilemedi');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // OTP kod doğrulama
+  async verifyOTP(email, otpCode) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.VERIFY_OTP}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, otpCode }),
+      });
+
+      const data = await this._parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'OTP doğrulama başarısız');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Şifre sıfırlama (reset token ile)
+  async resetPasswordWithToken(resetToken, newPassword) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.RESET_PASSWORD}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ resetToken, newPassword }),
+      });
+
+      const data = await this._parseResponse(response);
+
+      if (!response.ok) {
         throw new Error(data.error || 'Şifre sıfırlama başarısız');
       }
 
