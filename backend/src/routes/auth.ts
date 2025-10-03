@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import emailService from '../services/emailService';
 
 const router = Router();
 
@@ -18,6 +19,10 @@ router.post('/register', async (req: Request, res: Response) => {
     const user = await User.create({ firstName, lastName, email, password: hash });
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'elatsecret', { expiresIn: '7d' });
     console.log('Register - Generated token:', token); // Debug için
+    
+    // Hoş geldin email'i gönder (background'da)
+    emailService.sendWelcomeEmail(email, firstName).catch(console.error);
+    
     res.status(201).json({ 
       token,
       user: { 
@@ -176,7 +181,7 @@ router.post('/verify-token', authMiddleware, async (req: AuthRequest, res: Respo
   }
 });
 
-// Şifre sıfırlama isteği (e-posta gönderme)
+// Şifre sıfırlama isteği (OTP kodu ile e-posta gönderme)
 router.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
   
@@ -189,38 +194,102 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     
     if (!user) {
       // Güvenlik için kullanıcı bulunamadığında da başarılı mesajı döndür
-      return res.json({ message: 'Şifre sıfırlama talimatları e-posta adresinize gönderildi.' });
+      return res.json({ message: 'Şifre sıfırlama kodu e-posta adresinize gönderildi.' });
     }
     
-    // Gerçek uygulamada burada bir token oluşturulur ve e-posta gönderilir
-    // Demo için basitleştirilmiş bir yaklaşım kullanıyoruz
-    const resetToken = jwt.sign(
-      { id: user.id, email: user.email }, 
-      process.env.JWT_SECRET || 'elatsecret', 
-      { expiresIn: '1h' }
-    );
+    // 6 haneli OTP kodu üret
+    const otpCode = emailService.generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 dakika geçerli
     
-    // TODO: E-posta gönderme işlemi burada yapılır
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    // OTP kodunu veritabanına kaydet
+    await user.update({
+      otpCode,
+      otpExpiry
+    });
     
-    res.json({ message: 'Şifre sıfırlama talimatları e-posta adresinize gönderildi.' });
+    // Email gönder
+    const emailSent = await emailService.sendPasswordResetEmail(email, otpCode);
+    
+    if (emailSent) {
+      res.json({ 
+        message: 'Şifre sıfırlama kodu e-posta adresinize gönderildi.',
+        success: true 
+      });
+    } else {
+      res.status(500).json({ error: 'E-posta gönderilirken bir hata oluştu.' });
+    }
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'İşlem sırasında bir hata oluştu.' });
   }
 });
 
+// OTP kod doğrulama
+router.post('/verify-otp', async (req: Request, res: Response) => {
+  const { email, otpCode } = req.body;
+  
+  if (!email || !otpCode) {
+    return res.status(400).json({ error: 'E-posta ve OTP kodu gerekli.' });
+  }
+  
+  try {
+    const user = await User.findOne({ where: { email } });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+    }
+    
+    // OTP kodunu kontrol et
+    if (!user.otpCode || user.otpCode !== otpCode) {
+      return res.status(400).json({ error: 'Geçersiz OTP kodu.' });
+    }
+    
+    // OTP süresi kontrol et
+    if (!user.otpExpiry || new Date() > user.otpExpiry) {
+      return res.status(400).json({ error: 'OTP kodunun süresi dolmuş.' });
+    }
+    
+    // Reset token oluştur (şifre değiştirmek için)
+    const resetToken = jwt.sign(
+      { id: user.id, email: user.email }, 
+      process.env.JWT_SECRET || 'elatsecret', 
+      { expiresIn: '15m' }
+    );
+    
+    // Reset token'ı kaydet
+    await user.update({
+      resetToken,
+      resetTokenExpiry: new Date(Date.now() + 15 * 60 * 1000), // 15 dakika
+      otpCode: undefined, // OTP kodunu temizle
+      otpExpiry: undefined
+    });
+    
+    res.json({ 
+      message: 'OTP kodu doğrulandı.',
+      resetToken,
+      success: true 
+    });
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ error: 'İşlem sırasında bir hata oluştu.' });
+  }
+});
+
 // Şifre sıfırlama (yeni şifre ayarlama)
 router.post('/reset-password', async (req: Request, res: Response) => {
-  const { token, newPassword } = req.body;
+  const { resetToken, newPassword } = req.body;
   
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Token ve yeni şifre gerekli.' });
+  if (!resetToken || !newPassword) {
+    return res.status(400).json({ error: 'Reset token ve yeni şifre gerekli.' });
+  }
+  
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Şifre en az 6 karakter olmalıdır.' });
   }
   
   try {
     // Token'ı doğrula
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'elatsecret') as { id: number, email: string };
+    const decoded = jwt.verify(resetToken, process.env.JWT_SECRET || 'elatsecret') as { id: number, email: string };
     
     // Kullanıcıyı bul
     const user = await User.findByPk(decoded.id);
@@ -229,13 +298,30 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
     }
     
+    // Reset token kontrol et
+    if (!user.resetToken || user.resetToken !== resetToken) {
+      return res.status(400).json({ error: 'Geçersiz reset token.' });
+    }
+    
+    // Reset token süresi kontrol et
+    if (!user.resetTokenExpiry || new Date() > user.resetTokenExpiry) {
+      return res.status(400).json({ error: 'Reset token\'ın süresi dolmuş.' });
+    }
+    
     // Yeni şifreyi hashle
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
-    // Şifreyi güncelle
-    await user.update({ password: hashedPassword });
+    // Şifreyi güncelle ve reset token'ları temizle
+    await user.update({ 
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpiry: undefined
+    });
     
-    res.json({ message: 'Şifreniz başarıyla güncellendi.' });
+    // Şifre değiştirildi email'i gönder
+    emailService.sendPasswordChangedEmail(user.email, user.firstName).catch(console.error);
+    
+    res.json({ message: 'Şifreniz başarıyla güncellendi.', success: true });
   } catch (err) {
     console.error('Reset password error:', err);
     if (err instanceof jwt.JsonWebTokenError) {

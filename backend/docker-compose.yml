@@ -18,6 +18,8 @@ services:
       DATABASE_URL: postgres://elatuser:elatuser123@db:5432/elatdb
       PORT: 4000
       JWT_SECRET: elatsecret123456
+      EMAIL_USER: uzmanyapsin@gmail.com
+      EMAIL_PASS: owou cvhn xqva ncei
     ports:
       - "4000:4000"
     depends_on:

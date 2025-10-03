@@ -14,9 +14,13 @@ interface UserAttributes {
   bio?: string;
   interests?: string;
   isOnboardingComplete?: boolean;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
+  otpCode?: string;
+  otpExpiry?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'phone' | 'address' | 'city' | 'district' | 'bio' | 'interests' | 'isOnboardingComplete'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'phone' | 'address' | 'city' | 'district' | 'bio' | 'interests' | 'isOnboardingComplete' | 'resetToken' | 'resetTokenExpiry' | 'otpCode' | 'otpExpiry'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
@@ -31,6 +35,10 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public bio?: string;
   public interests?: string;
   public isOnboardingComplete?: boolean;
+  public resetToken?: string;
+  public resetTokenExpiry?: Date;
+  public otpCode?: string;
+  public otpExpiry?: Date;
 }
 
 User.init(
@@ -91,6 +99,26 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false,
+    },
+    resetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    resetTokenExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+    },
+    otpCode: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      defaultValue: null,
+    },
+    otpExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {

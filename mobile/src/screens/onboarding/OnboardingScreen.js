@@ -18,6 +18,10 @@ import { Sizes, getFontSize } from '../../utils/dimensions';
 import authService from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
+import ThemedAlert from '../../components/common/ThemedAlert';
+import PhoneNumberInput from '../../components/common/PhoneNumberInput';
+import CityDistrictPicker from '../../components/common/CityDistrictPicker';
+import InterestsPicker from '../../components/common/InterestsPicker';
 
 // Steps tanımını component dışına taşıyalım
 const steps = [
@@ -33,7 +37,7 @@ const steps = [
     subtitle: "Çevrenizdeki komşularınızı bulalım",
     icon: "location-outline",
     color: "#10b981",
-    fields: ["address", "city", "district"]
+    fields: ["address", "location"]
   },
   {
     title: "Hakkınızda",
@@ -49,13 +53,15 @@ export default function OnboardingScreen({ navigation, route }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    phone: '',
+    phoneCode: { code: '+90', country: 'Türkiye', flag: '🇹🇷' },
+    phoneNumber: '',
     address: '',
     city: '',
     district: '',
     bio: '',
-    interests: ''
+    interests: []
   });
+  const [alert, setAlert] = useState({ visible: false, type: 'info', title: '', message: '' });
   
   // Auth context'ten bilgileri al
   const { user, token, loading, completeOnboarding } = useAuth();
@@ -83,49 +89,67 @@ export default function OnboardingScreen({ navigation, route }) {
     }
   };
 
+  const showAlert = (type, title, message) => {
+    setAlert({ visible: true, type, title, message });
+  };
+
   // Form gönderme
   const handleSubmit = async () => {
     console.log('HandleSubmit - User:', user); // Debug için
     console.log('HandleSubmit - Token:', token); // Debug için
     
     if (!user?.id) {
-      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.');
+      showAlert('error', 'Hata', 'Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.');
       navigation.navigate('Login');
       return;
     }
     
     if (!token) {
-      Alert.alert('Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+      showAlert('error', 'Hata', 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
       navigation.navigate('Login');
       return;
     }
     
     try {
+      // Format phone number
+      const fullPhone = formData.phoneNumber ? 
+        `${formData.phoneCode.code}${formData.phoneNumber}` : '';
+      
+      // Format interests array to string
+      const interestsString = Array.isArray(formData.interests) ? 
+        formData.interests.join(', ') : formData.interests;
+      
       const profileData = {
         userId: user.id,
-        ...formData,
+        firstName: formData.firstName || user.firstName,
+        lastName: formData.lastName || user.lastName,
+        phone: fullPhone,
+        address: formData.address,
+        city: formData.city,
+        district: formData.district,
+        bio: formData.bio,
+        interests: interestsString,
         isOnboardingComplete: true
       };
       
       const result = await completeOnboarding(profileData);
       
       if (result.success) {
-        Alert.alert("Başarılı", "Profiliniz başarıyla güncellendi.", [
-          { 
-            text: "Tamam", 
-            onPress: () => {
-              // AuthProvider otomatik olarak needsOnboarding=false yapacak
-              // ve kullanıcıyı ana ekrana yönlendirecek
-              console.log('Onboarding tamamlandı, ana ekrana yönlendiriliyor');
-            }
+        // Success screen'e yönlendir
+        navigation.navigate('SuccessScreen', {
+          title: 'Profil Tamamlandı! 🎉',
+          message: `Hoş geldin ${user.firstName}! Profilin başarıyla oluşturuldu. Artık komşularınla bağlantı kurabilirsin.`,
+          buttonText: 'Uygulamayı Keşfet',
+          onButtonPress: () => {
+            console.log('Onboarding tamamlandı, ana ekrana yönlendiriliyor');
           }
-        ]);
+        });
       } else {
-        Alert.alert("Hata", result.error || "Profil güncellenirken bir hata oluştu.");
+        showAlert('error', 'Hata', result.error || 'Profil güncellenirken bir hata oluştu.');
       }
     } catch (error) {
       console.error("Profil güncelleme hatası:", error);
-      Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
+      showAlert('error', 'Hata', 'Beklenmeyen bir hata oluştu.');
     }
   };
 
@@ -199,17 +223,54 @@ export default function OnboardingScreen({ navigation, route }) {
           {/* Form Fields */}
           <View style={styles.formContainer}>
             {currentStepData.fields.map((field) => (
-              <InputField
-                key={field}
-                label={getFieldLabel(field)}
-                icon={getFieldIcon(field)}
-                value={formData[field]}
-                onChangeText={(text) => updateFormData(field, text)}
-                placeholder={getFieldPlaceholder(field)}
-                multiline={field === 'bio' || field === 'interests'}
-                numberOfLines={field === 'bio' || field === 'interests' ? 4 : 1}
-                style={field === 'bio' || field === 'interests' ? styles.textArea : null}
-              />
+              <View key={field} style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>{getFieldLabel(field)}</Text>
+                
+                {(() => {
+                  switch (field) {
+                    case 'phone':
+                      return (
+                        <PhoneNumberInput
+                          selectedCode={formData.phoneCode}
+                          phoneNumber={formData.phoneNumber}
+                          onCodeSelect={(code) => setFormData(prev => ({ ...prev, phoneCode: code }))}
+                          onPhoneChange={(number) => setFormData(prev => ({ ...prev, phoneNumber: number }))}
+                        />
+                      );
+                    
+                    case 'location':
+                      return (
+                        <CityDistrictPicker
+                          selectedCity={formData.city}
+                          selectedDistrict={formData.district}
+                          onCitySelect={(city) => setFormData(prev => ({ ...prev, city, district: '' }))}
+                          onDistrictSelect={(district) => setFormData(prev => ({ ...prev, district }))}
+                        />
+                      );
+                    
+                    case 'interests':
+                      return (
+                        <InterestsPicker
+                          selectedInterests={formData.interests}
+                          onInterestsChange={(interests) => setFormData(prev => ({ ...prev, interests }))}
+                        />
+                      );
+                    
+                    default:
+                      return (
+                        <InputField
+                          icon={getFieldIcon(field)}
+                          value={formData[field]}
+                          onChangeText={(text) => updateFormData(field, text)}
+                          placeholder={getFieldPlaceholder(field)}
+                          multiline={field === 'bio'}
+                          numberOfLines={field === 'bio' ? 4 : 1}
+                          style={field === 'bio' ? styles.textArea : null}
+                        />
+                      );
+                  }
+                })()}
+              </View>
             ))}
           </View>
         </ScrollView>
@@ -234,23 +295,29 @@ export default function OnboardingScreen({ navigation, route }) {
 
       {/* Loading Overlay */}
       <LoadingOverlay visible={loading} />
+
+      {/* Themed Alert */}
+      <ThemedAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, visible: false })}
+      />
     </SafeAreaView>
   );
 }
 
 // InputField component
-const InputField = ({ label, icon, style, ...props }) => {
+const InputField = ({ icon, style, ...props }) => {
   return (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={[styles.inputWrapper, style]}>
-        <Ionicons name={icon} size={20} color={COLORS.GRAY} style={styles.inputIcon} />
-        <TextInput
-          style={[styles.input, props.multiline && styles.multilineInput]}
-          placeholderTextColor={COLORS.LIGHT_GRAY}
-          {...props}
-        />
-      </View>
+    <View style={[styles.inputWrapper, style]}>
+      <Ionicons name={icon} size={20} color={COLORS.GRAY} style={styles.inputIcon} />
+      <TextInput
+        style={[styles.input, props.multiline && styles.multilineInput]}
+        placeholderTextColor={COLORS.LIGHT_GRAY}
+        {...props}
+      />
     </View>
   );
 };

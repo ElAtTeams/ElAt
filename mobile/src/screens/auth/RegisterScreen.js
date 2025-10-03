@@ -17,6 +17,7 @@ import AuthInput from '../../components/auth/AuthInput';
 import AuthButton from '../../components/auth/AuthButton';
 import ErrorMessage from '../../components/auth/ErrorMessage';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
+import ThemedAlert from '../../components/common/ThemedAlert';
 import { useForm } from '../../hooks/useForm';
 import { VALIDATION_RULES } from '../../utils/validation';
 import authService from '../../services/authService';
@@ -29,6 +30,7 @@ export default function RegisterScreen({ navigation }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const [alert, setAlert] = useState({ visible: false, type: 'info', title: '', message: '' });
   const { setAuthFromResponse } = useAuth();
 
   const {
@@ -53,6 +55,10 @@ export default function RegisterScreen({ navigation }) {
     }
   );
 
+  const showAlert = (type, title, message) => {
+    setAlert({ visible: true, type, title, message });
+  };
+
   const handleRegister = async () => {
     if (!validateForm()) return;
 
@@ -71,14 +77,21 @@ export default function RegisterScreen({ navigation }) {
         // Use AuthContext helper to persist and sync state
         const setResult = await setAuthFromResponse(result.data);
         setLoading(false);
-        Alert.alert('Başarılı', 'Hesabınız oluşturuldu! Profilinizi tamamlayalım.', [
-          { text: 'Tamam', onPress: () => navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs') }
-        ]);
+        
+        showAlert('success', 'Hoş Geldiniz! 🎉', `Merhaba ${values.firstName}! Hesabınız başarıyla oluşturuldu. Profilinizi tamamlayalım.`);
+        
+        // 3 saniye sonra yönlendir
+        setTimeout(() => {
+          setAlert({ ...alert, visible: false });
+          navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs');
+        }, 3000);
       } else {
         setGeneralError(result.error);
+        showAlert('error', 'Kayıt Başarısız', result.error || 'Hesap oluşturulurken bir hata oluştu.');
       }
     } catch (error) {
       setGeneralError('Beklenmeyen bir hata oluştu.');
+      showAlert('error', 'Hata', 'Beklenmeyen bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -201,6 +214,22 @@ export default function RegisterScreen({ navigation }) {
       </KeyboardAvoidingView>
 
       <LoadingOverlay visible={loading} />
+      
+      <ThemedAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, visible: false })}
+        autoClose={alert.type === 'success'}
+        autoCloseDelay={3000}
+        buttons={alert.type !== 'success' ? [
+          {
+            text: 'Tamam',
+            style: 'primary'
+          }
+        ] : []}
+      />
     </SafeAreaView>
   );
 }

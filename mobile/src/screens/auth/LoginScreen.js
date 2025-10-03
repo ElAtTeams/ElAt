@@ -17,6 +17,7 @@ import AuthInput from '../../components/auth/AuthInput';
 import AuthButton from '../../components/auth/AuthButton';
 import ErrorMessage from '../../components/auth/ErrorMessage';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
+import ThemedAlert from '../../components/common/ThemedAlert';
 import { useForm } from '../../hooks/useForm';
 import { VALIDATION_RULES } from '../../utils/validation';
 import authService from '../../services/authService';
@@ -28,6 +29,7 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const [alert, setAlert] = useState({ visible: false, type: 'info', title: '', message: '' });
   const { setAuthFromResponse } = useAuth();
 
   const {
@@ -43,6 +45,10 @@ export default function LoginScreen({ navigation }) {
     }
   );
 
+  const showAlert = (type, title, message) => {
+    setAlert({ visible: true, type, title, message });
+  };
+
   const handleLogin = async () => {
     if (!validateForm()) return;
 
@@ -56,17 +62,21 @@ export default function LoginScreen({ navigation }) {
         // Persist and sync via AuthContext helper
         const setResult = await setAuthFromResponse(result.data);
         setLoading(false);
-        Alert.alert('Başarılı', 'Giriş başarılı!', [
-          { 
-            text: 'Tamam', 
-            onPress: () => navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs') 
-          }
-        ]);
+        
+        showAlert('success', 'Hoş Geldiniz! 🎉', 'Giriş başarılı! Yönlendiriliyorsunuz...');
+        
+        // 2 saniye sonra yönlendir
+        setTimeout(() => {
+          setAlert({ ...alert, visible: false });
+          navigation.navigate(setResult?.needsOnboarding ? 'Onboarding' : 'MainTabs');
+        }, 2000);
       } else {
         setGeneralError(result.error);
+        showAlert('error', 'Giriş Başarısız', result.error || 'Giriş yapılırken bir hata oluştu.');
       }
     } catch (error) {
       setGeneralError('Beklenmeyen bir hata oluştu.');
+      showAlert('error', 'Hata', 'Beklenmeyen bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -188,6 +198,22 @@ export default function LoginScreen({ navigation }) {
       </KeyboardAvoidingView>
 
       <LoadingOverlay visible={loading} />
+      
+      <ThemedAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, visible: false })}
+        autoClose={alert.type === 'success'}
+        autoCloseDelay={2000}
+        buttons={alert.type !== 'success' ? [
+          {
+            text: 'Tamam',
+            style: 'primary'
+          }
+        ] : []}
+      />
     </SafeAreaView>
   );
 }
